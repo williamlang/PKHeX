@@ -16,6 +16,7 @@ using PKHeX.Drawing;
 using PKHeX.Drawing.Misc;
 using PKHeX.Drawing.PokeSprite;
 using PKHeX.WinForms.Controls;
+using PKHeX.WinForms.Subforms;
 using static PKHeX.Core.MessageStrings;
 
 namespace PKHeX.WinForms;
@@ -516,6 +517,14 @@ public partial class Main : Form
         form.Show();
     }
 
+    private void TeamGeneratorWindow(object sender, EventArgs e)
+    {
+        if (this.OpenWindowExists<TeamGenerator>())
+            return;
+        var form = new TeamGenerator(C_SAV.SAV);
+        form.Show();
+    }
+
     // Misc Options
     private void ClickShowdownImportPKM(object sender, EventArgs e)
     {
@@ -833,6 +842,7 @@ public partial class Main : Form
 
         Menu_ShowdownExportParty.Visible = sav.HasParty;
         Menu_ShowdownExportCurrentBox.Visible = sav.HasBox;
+        Menu_TeamGenerator.Visible = sav.HasParty;
 
         Settings.Startup.LoadSaveFile(path);
         if (Settings.Sounds.PlaySoundSAVLoad)
@@ -1383,5 +1393,11 @@ public partial class Main : Form
 
     private void ClickUndo(object sender, EventArgs e) => C_SAV.ClickUndo();
     private void ClickRedo(object sender, EventArgs e) => C_SAV.ClickRedo();
+    #endregion
+
+    #region //// TEAM GENERATOR FUNCTIONS ////
+
+
+
     #endregion
 }
