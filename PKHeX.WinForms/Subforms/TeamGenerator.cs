@@ -1,4 +1,5 @@
 using PKHeX.Core;
+using PKHeX.WinForms.Controls;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -13,13 +14,15 @@ namespace PKHeX.WinForms.Subforms
     public partial class TeamGenerator : Form
     {
 
+        private SAVEditor editor;
         private SaveFile sav;
         Dictionary<int, int> maxSpeciesIdByGeneration;
 
-        public TeamGenerator(SaveFile sav)
+        public TeamGenerator(SAVEditor editor)
         {
             InitializeComponent();
-            this.sav = sav;
+            this.editor = editor;
+            this.sav = editor.SAV;
 
             cboStarter.Items.Clear();
 
@@ -173,26 +176,30 @@ namespace PKHeX.WinForms.Subforms
             List<PKM> team = new List<PKM>();
             Random rnd = new Random();
 
+            int generation = cboGeneration.SelectedItem == null ? sav.Version.GetGeneration() : (int)cboGeneration.SelectedItem;
+            int maxSpeciesId = maxSpeciesIdByGeneration[generation];
+            int minSpeciesId = isLimit ? (generation > 1 ? maxSpeciesIdByGeneration[generation - 1] + 1 : 1) : 1;
+
             while (team.Count() < teamSize)
             {
                 bool pokemonIsOkay = true;
 
                 PKM pokemon;
-                if ((Species)cboStarter.SelectedItem != Species.None && team.Count == 0)
+                PKM originalPokemon;
+                if (cboStarter.SelectedItem != null && (Species)cboStarter.SelectedItem != Species.None && team.Count == 0)
                 {
                     Species species = (Species)cboStarter.SelectedItem;
                     pokemon = CreatePokemon(species, false);
                 }
                 else
                 {
-                    int generation = cboGeneration.SelectedItem == null ? sav.Version.GetGeneration() : (int)cboGeneration.SelectedItem;
-                    int maxSpeciesId = maxSpeciesIdByGeneration[generation];
-                    int minSpeciesId = isLimit ? (generation > 1 ? maxSpeciesIdByGeneration[generation - 1] + 1 : 1) : 1;
                     int rand = rnd.Next(minSpeciesId, maxSpeciesId);                  
 
                     Species species = (Species)rand;
                     pokemon = CreatePokemon(species, isEgg);   
                 }
+
+                originalPokemon = pokemon;
 
                 if (!legendariesOk)
                 {
@@ -211,7 +218,17 @@ namespace PKHeX.WinForms.Subforms
 
                 // @todo: this probably doesn't work for the Eevee line
                 var lastEvoPokemon = CreatePokemon((Species)lastEvo.Species, isEgg);
-                pokemon = CreatePokemon((Species)firstEvo.Species, isEgg);
+                var firstEvoPokemon = CreatePokemon((Species)firstEvo.Species, isEgg);
+
+                // check if the first evo pokemon is in the generation and can be added if we're limited
+                if (isLimit)
+                {
+                    if (firstEvoPokemon.Species >= minSpeciesId && firstEvoPokemon.Species <= maxSpeciesIdByGeneration[generation])
+                    {
+                        // we're okay
+                        pokemon = firstEvoPokemon;
+                    }
+                }
 
                 if (isBalanced)
                 {
@@ -240,9 +257,15 @@ namespace PKHeX.WinForms.Subforms
                     if (pokemon.IsEgg)
                     {
                         // set hatch step counter
-                        pokemon.CurrentFriendship = (byte)(team.Count() + 1);
-                        
+                        pokemon.CurrentFriendship = (byte)((team.Count() + 1) * 2);
                     }
+
+                    pokemon.ClearNickname();
+                    pokemon.Language = sav.Language;
+                    // To set the Pokémon's name to its species name, assign the Nickname property to the default species name.
+                    // Example:
+                    pokemon.Nickname = ((Species)pokemon.Species).ToString();
+                    pokemon.IsNicknamed = false; // Optional: mark as not nicknamed if needed
                     team.Add(pokemon);
                 }
             }
@@ -261,6 +284,10 @@ namespace PKHeX.WinForms.Subforms
             for (int i = 0; i < team.Count; i++)
             {
                 sav.SetPartySlotAtIndex(team[i], i);
+
+                SlotTouchType slotType = SlotTouchType.Set;
+                ISlotInfo slot = new SlotInfoParty(i + 1);
+                editor.NotifySlotChanged(slot, slotType, team[i]);
             }
         }
     }
