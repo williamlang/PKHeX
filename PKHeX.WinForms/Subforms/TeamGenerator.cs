@@ -26,12 +26,10 @@ namespace PKHeX.WinForms.Subforms
 
             cboStarter.Items.Clear();
 
-            for (int i = 0; i < sav.Version.GetMaxSpeciesID(); i++)
+            for (int i = 1; i < sav.Version.GetMaxSpeciesID(); i++)
             {
                 cboStarter.Items.Add((Species)i);
             }
-
-            cboStarter.SelectedIndex = 0;
 
             cboGeneration.Items.Clear();
 
@@ -43,6 +41,18 @@ namespace PKHeX.WinForms.Subforms
                 maxSpeciesIdByGeneration[i + 1] = GameUtil.GetMaxSpeciesID(ver);
             }
             maxSpeciesIdByGeneration[0] = 151; // Gen 1 max species ID
+        }
+
+        private void cboStarter_ItemCheck(object sender, ItemCheckEventArgs e)
+        {
+            // Count currently checked items
+            int checkedCount = cboStarter.CheckedItems.Count;
+            
+            // If trying to check and already at max, prevent it
+            if (e.NewValue == CheckState.Checked && checkedCount >= 6)
+            {
+                e.NewValue = CheckState.Unchecked;
+            }
         }
 
         private void clear()
@@ -179,9 +189,18 @@ namespace PKHeX.WinForms.Subforms
             List<PKM> team = new List<PKM>();
             Random rnd = new Random();
 
+            // Get selected starters
+            List<Species> selectedStarters = new List<Species>();
+            foreach (Species species in cboStarter.CheckedItems)
+            {
+                selectedStarters.Add(species);
+            }
+
             int generation = cboGeneration.SelectedItem == null ? sav.Version.GetGeneration() : (int)cboGeneration.SelectedItem;
             int maxSpeciesId = maxSpeciesIdByGeneration[generation];
             int minSpeciesId = isLimit ? (generation > 1 ? maxSpeciesIdByGeneration[generation - 1] + 1 : 1) : 1;
+
+            int starterIndex = 0;
 
             while (team.Count() < teamSize)
             {
@@ -190,10 +209,13 @@ namespace PKHeX.WinForms.Subforms
                 PKM pokemon;
                 PKM originalPokemon;
                 List<PKM> pokemons;
-                if (cboStarter.SelectedItem != null && (Species)cboStarter.SelectedItem != Species.None && team.Count == 0)
+                
+                // Use selected starters first, then random pokemon
+                if (selectedStarters.Count > 0 && starterIndex < selectedStarters.Count)
                 {
-                    Species species = (Species)cboStarter.SelectedItem;
+                    Species species = selectedStarters[starterIndex];
                     pokemons = CreatePokemon(species, false);
+                    starterIndex++;
                 }
                 else
                 {
@@ -308,7 +330,6 @@ namespace PKHeX.WinForms.Subforms
             var et = EvolutionTree.GetEvolutionTree(pokemon.Context);
             // Get all possible evolutions for this species/form
             var evolutions = et.Forward.GetForward(pokemon.Species, pokemon.Form);
-            //var evolutions = et.GetEvolutionsAndPreEvolutions(pokemon.Species, pokemon.Form);
 
             foreach (var evo in evolutions.Span)
             {

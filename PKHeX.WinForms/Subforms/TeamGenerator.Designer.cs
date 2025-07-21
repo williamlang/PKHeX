@@ -33,7 +33,7 @@ namespace PKHeX.WinForms.Subforms
             cboGeneration = new System.Windows.Forms.ComboBox();
             lblGeneration = new System.Windows.Forms.Label();
             label1 = new System.Windows.Forms.Label();
-            cboStarter = new System.Windows.Forms.ComboBox();
+            cboStarter = new System.Windows.Forms.CheckedListBox();
             chkBalanced = new System.Windows.Forms.CheckBox();
             chkMustEvolve = new System.Windows.Forms.CheckBox();
             chkLegendaries = new System.Windows.Forms.CheckBox();
@@ -65,7 +65,7 @@ namespace PKHeX.WinForms.Subforms
             grpOptions.Controls.Add(Generate);
             grpOptions.Location = new System.Drawing.Point(12, 12);
             grpOptions.Name = "grpOptions";
-            grpOptions.Size = new System.Drawing.Size(275, 291);
+            grpOptions.Size = new System.Drawing.Size(275, 335);
             grpOptions.TabIndex = 0;
             grpOptions.TabStop = false;
             grpOptions.Text = "Options";
@@ -73,7 +73,7 @@ namespace PKHeX.WinForms.Subforms
             // cboGeneration
             // 
             cboGeneration.FormattingEnabled = true;
-            cboGeneration.Location = new System.Drawing.Point(85, 80);
+            cboGeneration.Location = new System.Drawing.Point(85, 152);
             cboGeneration.Name = "cboGeneration";
             cboGeneration.Size = new System.Drawing.Size(111, 23);
             cboGeneration.TabIndex = 12;
@@ -81,7 +81,7 @@ namespace PKHeX.WinForms.Subforms
             // lblGeneration
             // 
             lblGeneration.AutoSize = true;
-            lblGeneration.Location = new System.Drawing.Point(5, 83);
+            lblGeneration.Location = new System.Drawing.Point(5, 155);
             lblGeneration.Name = "lblGeneration";
             lblGeneration.Size = new System.Drawing.Size(65, 15);
             lblGeneration.TabIndex = 11;
@@ -101,13 +101,14 @@ namespace PKHeX.WinForms.Subforms
             cboStarter.FormattingEnabled = true;
             cboStarter.Location = new System.Drawing.Point(85, 22);
             cboStarter.Name = "cboStarter";
-            cboStarter.Size = new System.Drawing.Size(175, 23);
+            cboStarter.Size = new System.Drawing.Size(175, 94);
             cboStarter.TabIndex = 2;
+            cboStarter.ItemCheck += cboStarter_ItemCheck;
             // 
             // chkBalanced
             // 
             chkBalanced.AutoSize = true;
-            chkBalanced.Location = new System.Drawing.Point(13, 137);
+            chkBalanced.Location = new System.Drawing.Point(13, 181);
             chkBalanced.Name = "chkBalanced";
             chkBalanced.Size = new System.Drawing.Size(79, 19);
             chkBalanced.TabIndex = 9;
@@ -117,7 +118,7 @@ namespace PKHeX.WinForms.Subforms
             // chkMustEvolve
             // 
             chkMustEvolve.AutoSize = true;
-            chkMustEvolve.Location = new System.Drawing.Point(12, 188);
+            chkMustEvolve.Location = new System.Drawing.Point(12, 232);
             chkMustEvolve.Name = "chkMustEvolve";
             chkMustEvolve.Size = new System.Drawing.Size(95, 19);
             chkMustEvolve.TabIndex = 8;
@@ -127,7 +128,7 @@ namespace PKHeX.WinForms.Subforms
             // chkLegendaries
             // 
             chkLegendaries.AutoSize = true;
-            chkLegendaries.Location = new System.Drawing.Point(12, 163);
+            chkLegendaries.Location = new System.Drawing.Point(12, 207);
             chkLegendaries.Name = "chkLegendaries";
             chkLegendaries.Size = new System.Drawing.Size(94, 19);
             chkLegendaries.TabIndex = 6;
@@ -137,7 +138,7 @@ namespace PKHeX.WinForms.Subforms
             // lblTeamSize
             // 
             lblTeamSize.AutoSize = true;
-            lblTeamSize.Location = new System.Drawing.Point(12, 53);
+            lblTeamSize.Location = new System.Drawing.Point(12, 125);
             lblTeamSize.Name = "lblTeamSize";
             lblTeamSize.Size = new System.Drawing.Size(58, 15);
             lblTeamSize.TabIndex = 7;
@@ -145,7 +146,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             // numTeamSize
             // 
-            numTeamSize.Location = new System.Drawing.Point(85, 51);
+            numTeamSize.Location = new System.Drawing.Point(85, 123);
             numTeamSize.Maximum = new decimal(new int[] { 6, 0, 0, 0 });
             numTeamSize.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numTeamSize.Name = "numTeamSize";
@@ -156,7 +157,7 @@ namespace PKHeX.WinForms.Subforms
             // chkSecret
             // 
             chkSecret.AutoSize = true;
-            chkSecret.Location = new System.Drawing.Point(10, 213);
+            chkSecret.Location = new System.Drawing.Point(10, 257);
             chkSecret.Name = "chkSecret";
             chkSecret.Size = new System.Drawing.Size(63, 19);
             chkSecret.TabIndex = 5;
@@ -166,7 +167,7 @@ namespace PKHeX.WinForms.Subforms
             // chkEggs
             // 
             chkEggs.AutoSize = true;
-            chkEggs.Location = new System.Drawing.Point(10, 236);
+            chkEggs.Location = new System.Drawing.Point(10, 280);
             chkEggs.Name = "chkEggs";
             chkEggs.Size = new System.Drawing.Size(69, 19);
             chkEggs.TabIndex = 4;
@@ -175,7 +176,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             // Generate
             // 
-            Generate.Location = new System.Drawing.Point(194, 262);
+            Generate.Location = new System.Drawing.Point(194, 306);
             Generate.Name = "Generate";
             Generate.Size = new System.Drawing.Size(75, 23);
             Generate.TabIndex = 3;
@@ -188,13 +189,13 @@ namespace PKHeX.WinForms.Subforms
             txtDebug.Location = new System.Drawing.Point(309, 32);
             txtDebug.Multiline = true;
             txtDebug.Name = "txtDebug";
-            txtDebug.Size = new System.Drawing.Size(537, 265);
+            txtDebug.Size = new System.Drawing.Size(537, 309);
             txtDebug.TabIndex = 1;
             // 
             // chkLimit
             // 
             chkLimit.AutoSize = true;
-            chkLimit.Location = new System.Drawing.Point(202, 82);
+            chkLimit.Location = new System.Drawing.Point(202, 154);
             chkLimit.Name = "chkLimit";
             chkLimit.Size = new System.Drawing.Size(58, 19);
             chkLimit.TabIndex = 13;
@@ -205,7 +206,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(858, 315);
+            ClientSize = new System.Drawing.Size(858, 359);
             Controls.Add(txtDebug);
             Controls.Add(grpOptions);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
@@ -235,7 +236,7 @@ namespace PKHeX.WinForms.Subforms
         private System.Windows.Forms.CheckBox chkMustEvolve;
         private System.Windows.Forms.CheckBox chkBalanced;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.ComboBox cboStarter;
+        private System.Windows.Forms.CheckedListBox cboStarter;
         private System.Windows.Forms.ComboBox cboGeneration;
         private System.Windows.Forms.Label lblGeneration;
         private System.Windows.Forms.CheckBox chkLimit;
