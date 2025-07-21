@@ -35,6 +35,7 @@ namespace PKHeX.WinForms.Subforms
             maxSpeciesIdByGeneration[1] = 151;
 
             PopulateStarterList();
+            PopulatePresets();
         }
 
         private void cboStarter_ItemCheck(object sender, ItemCheckEventArgs e)
@@ -96,7 +97,145 @@ namespace PKHeX.WinForms.Subforms
             }
         }
 
+        private void PopulatePresets()
+        {
+            cboPreset.Items.Clear();
+            cboPreset.Items.Add("-- Select Preset --");
+            cboPreset.Items.Add("Classic Starters (Gen 1-3)");
+            cboPreset.Items.Add("Gen 1 Only");
+            cboPreset.Items.Add("Gen 2 Only");
+            cboPreset.Items.Add("Gen 3 Only");
+            cboPreset.Items.Add("All Gens (No Limit)");
+            cboPreset.Items.Add("Legendary Focus");
+            cboPreset.Items.Add("Starter Pokemon Only");
+            cboPreset.SelectedIndex = 0;
+        }
+
+        private void cboPreset_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboPreset.SelectedIndex <= 0) return;
+
+            string preset = cboPreset.SelectedItem?.ToString() ?? "";
+            if (string.IsNullOrEmpty(preset)) return;
+            
+            // Clear current selections
+            for (int i = 0; i < cboStarter.Items.Count; i++)
+            {
+                cboStarter.SetItemChecked(i, false);
+            }
+
+            switch (preset)
+            {
+                case "Classic Starters (Gen 1-3)":
+                    cboGeneration.SelectedItem = 3;
+                    chkLimit.Checked = false;
+                    sldTeamSize.Value = 6;
+                    SelectStartersBySpecies(new[] { 1, 4, 7, 152, 155, 158, 252, 255, 258 }); // Bulbasaur, Charmander, Squirtle, Chikorita, Cyndaquil, Totodile, Treecko, Torchic, Mudkip
+                    break;
+                    
+                case "Gen 1 Only":
+                    cboGeneration.SelectedItem = 1;
+                    chkLimit.Checked = true;
+                    sldTeamSize.Value = 6;
+                    break;
+                    
+                case "Gen 2 Only":
+                    cboGeneration.SelectedItem = 2;
+                    chkLimit.Checked = true;
+                    sldTeamSize.Value = 6;
+                    break;
+                    
+                case "Gen 3 Only":
+                    cboGeneration.SelectedItem = 3;
+                    chkLimit.Checked = true;
+                    sldTeamSize.Value = 6;
+                    break;
+                    
+                case "All Gens (No Limit)":
+                    if (cboGeneration.Items.Count > 0)
+                        cboGeneration.SelectedIndex = cboGeneration.Items.Count - 1;
+                    chkLimit.Checked = false;
+                    sldTeamSize.Value = 6;
+                    break;
+                    
+                case "Legendary Focus":
+                    if (cboGeneration.Items.Count > 0)
+                        cboGeneration.SelectedIndex = cboGeneration.Items.Count - 1;
+                    chkLimit.Checked = false;
+                    sldTeamSize.Value = 3;
+                    SelectLegendaryPokemon();
+                    break;
+                    
+                case "Starter Pokemon Only":
+                    if (cboGeneration.Items.Count > 0)
+                        cboGeneration.SelectedIndex = cboGeneration.Items.Count - 1;
+                    chkLimit.Checked = false;
+                    sldTeamSize.Value = 6;
+                    SelectAllStarters();
+                    break;
+            }
+        }
+
+        private void SelectStartersBySpecies(int[] speciesIds)
+        {
+            for (int i = 0; i < cboStarter.Items.Count; i++)
+            {
+                Species species = (Species)cboStarter.Items[i];
+                if (speciesIds.Contains((int)species))
+                {
+                    cboStarter.SetItemChecked(i, true);
+                }
+            }
+        }
+
+        private void SelectLegendaryPokemon()
+        {
+            // Define some common legendary Pokemon across generations
+            int[] legendaryIds = { 144, 145, 146, 150, 151, // Gen 1: Articuno, Zapdos, Moltres, Mewtwo, Mew
+                                   243, 244, 245, 249, 250, 251, // Gen 2: Raikou, Entei, Suicune, Lugia, Ho-Oh, Celebi
+                                   377, 378, 379, 380, 381, 382, 383, 384, 385, 386 }; // Gen 3: Regis, Latios, Latias, Kyogre, Groudon, Rayquaza, Jirachi, Deoxys
+
+            for (int i = 0; i < cboStarter.Items.Count && cboStarter.CheckedItems.Count < 6; i++)
+            {
+                Species species = (Species)cboStarter.Items[i];
+                if (legendaryIds.Contains((int)species))
+                {
+                    cboStarter.SetItemChecked(i, true);
+                }
+            }
+        }
+
+        private void SelectAllStarters()
+        {
+            // Define starter Pokemon across generations
+            int[] starterIds = { 1, 4, 7, // Gen 1
+                                 152, 155, 158, // Gen 2
+                                 252, 255, 258, // Gen 3
+                                 387, 390, 393, // Gen 4
+                                 495, 498, 501, // Gen 5
+                                 650, 653, 656, // Gen 6
+                                 722, 725, 728, // Gen 7
+                                 810, 813, 816, // Gen 8
+                                 906, 909, 912 }; // Gen 9
+
+            int checkedCount = 0;
+            for (int i = 0; i < cboStarter.Items.Count && checkedCount < 6; i++)
+            {
+                Species species = (Species)cboStarter.Items[i];
+                if (starterIds.Contains((int)species))
+                {
+                    cboStarter.SetItemChecked(i, true);
+                    checkedCount++;
+                }
+            }
+        }
+
         private List<PKM> CreatePokemon(Species species, bool isEgg)
+        {
+            return CreatePokemon(species, isEgg, false);
+        }
+
+        private List<PKM> CreatePokemon(Species species, bool isEgg, bool allowRegionalForms)
         {
             Random rnd = new Random();
             PKM pokemon = EntityBlank.GetBlank(sav.Generation, sav.Version);
@@ -150,6 +289,22 @@ namespace PKHeX.WinForms.Subforms
             if (pokemon.PersonalInfo.HasForms)
             {
                 pokemon.Form = (byte)rnd.Next(0, pokemon.PersonalInfo.FormCount - 1);
+            }
+
+            // Handle regional forms if enabled
+            if (allowRegionalForms && HasRegionalForm(pokemon.Species, sav.Version.GetContext()))
+            {
+                var regionalForms = GetAvailableRegionalForms(pokemon.Species, sav.Version.GetContext());
+                if (regionalForms.Length > 0)
+                {
+                    // Include the original form (0) plus regional forms
+                    var allForms = new byte[regionalForms.Length + 1];
+                    allForms[0] = 0; // Original form
+                    Array.Copy(regionalForms, 0, allForms, 1, regionalForms.Length);
+                    
+                    // Randomly select from available forms
+                    pokemon.Form = allForms[rnd.Next(allForms.Length)];
+                }
             }
 
             if (isEgg)
@@ -218,6 +373,7 @@ namespace PKHeX.WinForms.Subforms
             bool isSecret = chkSecret.Checked;
             bool isBalanced = chkBalanced.Checked;
             bool isLimit = chkLimit.Checked;
+            bool allowRegionalForms = chkRegionalForms.Checked;
             List<byte> types = new List<byte>();
 
             List<PKM> team = new List<PKM>();
@@ -255,7 +411,7 @@ namespace PKHeX.WinForms.Subforms
                 if (selectedStarters.Count > 0 && starterIndex < selectedStarters.Count)
                 {
                     Species species = selectedStarters[starterIndex];
-                    pokemons = CreatePokemon(species, false);
+                    pokemons = CreatePokemon(species, false, allowRegionalForms);
                     starterIndex++;
                 }
                 else
@@ -263,7 +419,7 @@ namespace PKHeX.WinForms.Subforms
                     int rand = rnd.Next(minSpeciesId, maxSpeciesId);
 
                     Species species = (Species)rand;
-                    pokemons = CreatePokemon(species, isEgg);
+                    pokemons = CreatePokemon(species, isEgg, allowRegionalForms);
                 }
 
                 pokemon = pokemons[0];
@@ -285,8 +441,8 @@ namespace PKHeX.WinForms.Subforms
                 }
 
                 // @todo: this probably doesn't work for the Eevee line
-                var lastEvoPokemon = CreatePokemon((Species)lastEvo.Species, isEgg)[0];
-                var firstEvoPokemon = CreatePokemon((Species)firstEvo.Species, isEgg)[0];
+                var lastEvoPokemon = CreatePokemon((Species)lastEvo.Species, isEgg, allowRegionalForms)[0];
+                var firstEvoPokemon = CreatePokemon((Species)firstEvo.Species, isEgg, allowRegionalForms)[0];
 
                 // check if the first evo pokemon is in the generation and can be added if we're limited
                 if (isLimit)
@@ -394,6 +550,135 @@ namespace PKHeX.WinForms.Subforms
                 EvolutionType.LevelUpHeldItemNight or
                 EvolutionType.LevelUpWormhole or
                 EvolutionType.UseItemFullMoon;
+        }
+
+        /// <summary>
+        /// Checks if a species has any regional forms available in the current context.
+        /// </summary>
+        private bool HasRegionalForm(ushort species, EntityContext context)
+        {
+            var regionalForms = GetAvailableRegionalForms(species, context);
+            return regionalForms.Length > 0;
+        }
+
+        /// <summary>
+        /// Gets the available regional forms for a species in the current context.
+        /// </summary>
+        private byte[] GetAvailableRegionalForms(ushort species, EntityContext context)
+        {
+            var availableForms = new List<byte>();
+            
+            // Check if the species has regional forms based on the game context
+            var formCount = sav.Personal[species].FormCount;
+            
+            for (byte form = 1; form < formCount; form++)
+            {
+                if (IsRegionalFormAvailable(species, form, context))
+                {
+                    availableForms.Add(form);
+                }
+            }
+            
+            return availableForms.ToArray();
+        }
+
+        /// <summary>
+        /// Determines if a specific regional form is available in the current context.
+        /// </summary>
+        private bool IsRegionalFormAvailable(ushort species, byte form, EntityContext context)
+        {
+            // Use the PersonalTable to check if this form is present in the game
+            try 
+            {
+                if (!sav.Personal.IsPresentInGame(species, form))
+                    return false;
+
+                // Additional checks for specific regional forms based on context
+                return context.Generation() switch
+                {
+                    7 => IsAlolanFormValid(species, form),
+                    8 => IsGalarianOrAlolanFormValid(species, form, context),
+                    9 => IsPaldeanGalarianOrAlolanFormValid(species, form),
+                    _ => form == 1 // For older generations, only check basic alternate forms
+                };
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsAlolanFormValid(ushort species, byte form)
+        {
+            // Alolan forms are form 1 for most species
+            return form == 1 && IsKnownAlolanSpecies(species);
+        }
+
+        private bool IsGalarianOrAlolanFormValid(ushort species, byte form, EntityContext context)
+        {
+            return species switch
+            {
+                // Meowth has both Alolan (form 1) and Galarian (form 2) variants
+                (int)Species.Meowth => form <= 2,
+                _ when IsKnownGalarianSpecies(species) => form == 1, // Galarian forms are typically form 1
+                _ when IsKnownAlolanSpecies(species) => form == 1, // Alolan forms are form 1
+                _ => false
+            };
+        }
+
+        private bool IsPaldeanGalarianOrAlolanFormValid(ushort species, byte form)
+        {
+            return species switch
+            {
+                // Tauros has multiple Paldean forms (1, 2, 3)
+                (int)Species.Tauros => form <= 3 && form >= 1,
+                _ when IsKnownPaldeanSpecies(species) => form == 1,
+                _ when IsKnownGalarianSpecies(species) => form == 1,
+                _ when IsKnownAlolanSpecies(species) => form == 1,
+                _ => false
+            };
+        }
+
+        private bool IsKnownAlolanSpecies(ushort species)
+        {
+            return species switch
+            {
+                (int)Species.Rattata or (int)Species.Raticate or
+                (int)Species.Raichu or
+                (int)Species.Sandshrew or (int)Species.Sandslash or
+                (int)Species.Vulpix or (int)Species.Ninetales or
+                (int)Species.Diglett or (int)Species.Dugtrio or
+                (int)Species.Meowth or (int)Species.Persian or
+                (int)Species.Geodude or (int)Species.Graveler or (int)Species.Golem or
+                (int)Species.Grimer or (int)Species.Muk or
+                (int)Species.Exeggutor or
+                (int)Species.Marowak => true,
+                _ => false
+            };
+        }
+
+        private bool IsKnownGalarianSpecies(ushort species)
+        {
+            return species switch
+            {
+                (int)Species.Meowth or (int)Species.Ponyta or (int)Species.Rapidash or
+                (int)Species.Slowpoke or (int)Species.Slowbro or (int)Species.Slowking or
+                (int)Species.Farfetchd or (int)Species.Weezing or
+                (int)Species.MrMime or (int)Species.Articuno or (int)Species.Zapdos or
+                (int)Species.Moltres or (int)Species.Corsola or (int)Species.Zigzagoon or
+                (int)Species.Linoone or (int)Species.Darumaka or (int)Species.Darmanitan or
+                (int)Species.Yamask or (int)Species.Stunfisk => true,
+                _ => false
+            };
+        }
+
+        private bool IsKnownPaldeanSpecies(ushort species)
+        {
+            return species switch
+            {
+                (int)Species.Tauros or (int)Species.Wooper => true,
+                _ => false
+            };
         }
     }
 }
