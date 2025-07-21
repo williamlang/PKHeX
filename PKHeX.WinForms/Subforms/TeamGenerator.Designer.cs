@@ -33,6 +33,7 @@ namespace PKHeX.WinForms.Subforms
             grpTeamRules = new System.Windows.Forms.GroupBox();
             grpPokemonOptions = new System.Windows.Forms.GroupBox();
             grpOutput = new System.Windows.Forms.GroupBox();
+            btnHelp = new System.Windows.Forms.Button();
             chkLimit = new System.Windows.Forms.CheckBox();
             cboGeneration = new System.Windows.Forms.ComboBox();
             cboStarter = new System.Windows.Forms.CheckedListBox();
@@ -55,6 +56,7 @@ namespace PKHeX.WinForms.Subforms
             numMaxStatTotal = new System.Windows.Forms.NumericUpDown();
             lblMinStatTotal = new System.Windows.Forms.Label();
             lblMaxStatTotal = new System.Windows.Forms.Label();
+            chkMaxIVs = new System.Windows.Forms.CheckBox();
             grpOptions.SuspendLayout();
             grpTeamRules.SuspendLayout();
             grpPokemonOptions.SuspendLayout();
@@ -80,6 +82,7 @@ namespace PKHeX.WinForms.Subforms
             grpOptions.Controls.Add(cboPreset);
             grpOptions.Controls.Add(lblPreset);
             grpOptions.Controls.Add(Generate);
+            grpOptions.Controls.Add(btnHelp);
             grpOptions.Location = new System.Drawing.Point(12, 12);
             grpOptions.Name = "grpOptions";
             grpOptions.Size = new System.Drawing.Size(560, 500);
@@ -102,6 +105,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             grpPokemonOptions.Controls.Add(chkLegendaries);
             grpPokemonOptions.Controls.Add(chkRegionalForms);
+            grpPokemonOptions.Controls.Add(chkMaxIVs);
             grpPokemonOptions.Controls.Add(chkStatLimit);
             grpPokemonOptions.Controls.Add(lblMinStatTotal);
             grpPokemonOptions.Controls.Add(numMinStatTotal);
@@ -213,6 +217,16 @@ namespace PKHeX.WinForms.Subforms
             chkRegionalForms.TabIndex = 17;
             chkRegionalForms.Text = "Regional Forms";
             chkRegionalForms.UseVisualStyleBackColor = true;
+            // 
+            // chkMaxIVs
+            // 
+            chkMaxIVs.AutoSize = true;
+            chkMaxIVs.Location = new System.Drawing.Point(130, 50);
+            chkMaxIVs.Name = "chkMaxIVs";
+            chkMaxIVs.Size = new System.Drawing.Size(78, 19);
+            chkMaxIVs.TabIndex = 23;
+            chkMaxIVs.Text = "Max IVs";
+            chkMaxIVs.UseVisualStyleBackColor = true;
             // 
             // chkStatLimit
             // 
@@ -345,6 +359,16 @@ namespace PKHeX.WinForms.Subforms
             Generate.UseVisualStyleBackColor = true;
             Generate.Click += Generate_Click;
             // 
+            // btnHelp
+            // 
+            btnHelp.Location = new System.Drawing.Point(400, 420);
+            btnHelp.Name = "btnHelp";
+            btnHelp.Size = new System.Drawing.Size(75, 30);
+            btnHelp.TabIndex = 23;
+            btnHelp.Text = "Help";
+            btnHelp.UseVisualStyleBackColor = true;
+            btnHelp.Click += btnHelp_Click;
+            // 
             // TeamGenerator
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -379,6 +403,7 @@ namespace PKHeX.WinForms.Subforms
         private System.Windows.Forms.GroupBox grpPokemonOptions;
         private System.Windows.Forms.GroupBox grpOutput;
         private System.Windows.Forms.Button Generate;
+        private System.Windows.Forms.Button btnHelp;
         private System.Windows.Forms.CheckBox chkEggs;
         private System.Windows.Forms.Label lblTeamSize;
         private System.Windows.Forms.TrackBar sldTeamSize;
@@ -400,5 +425,6 @@ namespace PKHeX.WinForms.Subforms
         private System.Windows.Forms.NumericUpDown numMaxStatTotal;
         private System.Windows.Forms.Label lblMinStatTotal;
         private System.Windows.Forms.Label lblMaxStatTotal;
+        private System.Windows.Forms.CheckBox chkMaxIVs;
     }
 }

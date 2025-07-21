@@ -74,6 +74,17 @@ namespace PKHeX.WinForms.Subforms
             numMaxStatTotal.Enabled = enabled;
         }
 
+        private void btnHelp_Click(object sender, EventArgs e)
+        {
+            ShowHelpDialog();
+        }
+
+        private void ShowHelpDialog()
+        {
+            var helpForm = new TeamGeneratorHelp();
+            helpForm.ShowDialog(this);
+        }
+
         private void PopulateStarterList()
         {
             cboStarter.Items.Clear();
@@ -204,10 +215,15 @@ namespace PKHeX.WinForms.Subforms
 
         private List<PKM> CreatePokemon(Species species, bool isEgg)
         {
-            return CreatePokemon(species, isEgg, false);
+            return CreatePokemon(species, isEgg, false, false);
         }
 
         private List<PKM> CreatePokemon(Species species, bool isEgg, bool allowRegionalForms)
+        {
+            return CreatePokemon(species, isEgg, allowRegionalForms, false);
+        }
+
+        private List<PKM> CreatePokemon(Species species, bool isEgg, bool allowRegionalForms, bool useMaxIVs)
         {
             Random rnd = new Random();
             PKM pokemon = EntityBlank.GetBlank(sav.Generation, sav.Version);
@@ -296,12 +312,24 @@ namespace PKHeX.WinForms.Subforms
                 validGrades = validGrades.Concat(new EffortValueGrade[] { EffortValueGrade.Quarter, EffortValueGrade.Illegal }).ToArray();
             }
 
-            while (!validGrades.Contains(EffortValues.GetGrade(ivs.ToArray().Sum()))) {
-                pokemon.SetRandomIVs();
-
+            if (useMaxIVs)
+            {
+                // Set maximum IVs (31 for each stat)
                 for (int i = 0; i < 6; i++)
                 {
-                    ivs[i] = pokemon.GetIV(i);
+                    ivs[i] = 31;
+                }
+                pokemon.SetIVs(ivs);
+            }
+            else
+            {
+                while (!validGrades.Contains(EffortValues.GetGrade(ivs.ToArray().Sum()))) {
+                    pokemon.SetRandomIVs();
+
+                    for (int i = 0; i < 6; i++)
+                    {
+                        ivs[i] = pokemon.GetIV(i);
+                    }
                 }
             }
 
@@ -347,6 +375,7 @@ namespace PKHeX.WinForms.Subforms
             bool isLimit = chkLimit.Checked;
             bool allowRegionalForms = chkRegionalForms.Checked;
             bool hasStatLimit = chkStatLimit.Checked;
+            bool useMaxIVs = chkMaxIVs.Checked;
             int minStatTotal = hasStatLimit ? (int)numMinStatTotal.Value : 0;
             int maxStatTotal = hasStatLimit ? (int)numMaxStatTotal.Value : 999;
             List<byte> types = new List<byte>();
@@ -386,7 +415,7 @@ namespace PKHeX.WinForms.Subforms
                 if (selectedStarters.Count > 0 && starterIndex < selectedStarters.Count)
                 {
                     Species species = selectedStarters[starterIndex];
-                    pokemons = CreatePokemon(species, false, allowRegionalForms);
+                    pokemons = CreatePokemon(species, false, allowRegionalForms, useMaxIVs);
                     starterIndex++;
                 }
                 else
@@ -394,7 +423,7 @@ namespace PKHeX.WinForms.Subforms
                     int rand = rnd.Next(minSpeciesId, maxSpeciesId);
 
                     Species species = (Species)rand;
-                    pokemons = CreatePokemon(species, isEgg, allowRegionalForms);
+                    pokemons = CreatePokemon(species, isEgg, allowRegionalForms, useMaxIVs);
                 }
 
                 pokemon = pokemons[0];
@@ -416,8 +445,8 @@ namespace PKHeX.WinForms.Subforms
                 }
 
                 // @todo: this probably doesn't work for the Eevee line
-                var lastEvoPokemon = CreatePokemon((Species)lastEvo.Species, isEgg, allowRegionalForms)[0];
-                var firstEvoPokemon = CreatePokemon((Species)firstEvo.Species, isEgg, allowRegionalForms)[0];
+                var lastEvoPokemon = CreatePokemon((Species)lastEvo.Species, isEgg, allowRegionalForms, useMaxIVs)[0];
+                var firstEvoPokemon = CreatePokemon((Species)firstEvo.Species, isEgg, allowRegionalForms, useMaxIVs)[0];
 
                 // Check stat total if limit is enabled
                 if (hasStatLimit)
