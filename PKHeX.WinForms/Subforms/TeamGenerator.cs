@@ -24,15 +24,6 @@ namespace PKHeX.WinForms.Subforms
             this.editor = editor;
             this.sav = editor.SAV;
 
-            cboStarter.Items.Clear();
-
-            for (int i = 1; i < sav.Version.GetMaxSpeciesID(); i++)
-            {
-                cboStarter.Items.Add((Species)i);
-            }
-
-            cboGeneration.Items.Clear();
-
             maxSpeciesIdByGeneration = new Dictionary<int, int>();
             for (int i = 0; i < sav.Version.GetGeneration(); i++)
             {
@@ -40,7 +31,10 @@ namespace PKHeX.WinForms.Subforms
                 GameVersion ver = GameUtil.GetVersion((byte)(i + 1));
                 maxSpeciesIdByGeneration[i + 1] = GameUtil.GetMaxSpeciesID(ver);
             }
-            maxSpeciesIdByGeneration[0] = 151; // Gen 1 max species ID
+            // Add a hard-coded Generation 1 maximum since GameUtil might not handle Gen 1 properly
+            maxSpeciesIdByGeneration[1] = 151;
+
+            PopulateStarterList();
         }
 
         private void cboStarter_ItemCheck(object sender, ItemCheckEventArgs e)
@@ -60,9 +54,46 @@ namespace PKHeX.WinForms.Subforms
             lblTeamSizeValue.Text = sldTeamSize.Value.ToString();
         }
 
-        private void clear()
+        private void cboGeneration_SelectedIndexChanged(object sender, EventArgs e)
         {
-            txtDebug.Text = "";
+            PopulateStarterList();
+        }
+
+        private void chkLimit_CheckedChanged(object sender, EventArgs e)
+        {
+            PopulateStarterList();
+        }
+
+        private void PopulateStarterList()
+        {
+            cboStarter.Items.Clear();
+
+            int maxSpeciesId = sav.Version.GetMaxSpeciesID();
+            int minSpeciesId = 1;
+
+            // If a generation is selected, use that generation's max
+            if (cboGeneration.SelectedItem != null)
+            {
+                int selectedGeneration = (int)cboGeneration.SelectedItem;
+                maxSpeciesId = maxSpeciesIdByGeneration[selectedGeneration];
+                
+                // If limit is checked, only show that specific generation
+                if (chkLimit.Checked)
+                {
+                    // For Gen 1, start at 1. For other generations, start after the previous generation's max
+                    minSpeciesId = selectedGeneration == 1 ? 1 : maxSpeciesIdByGeneration[selectedGeneration - 1] + 1;
+                }
+                // If limit is not checked, show all pokemon from gen 1 up to selected generation
+                else
+                {
+                    minSpeciesId = 1;
+                }
+            }
+
+            for (int i = minSpeciesId; i <= maxSpeciesId; i++)
+            {
+                cboStarter.Items.Add((Species)i);
+            }
         }
 
         private List<PKM> CreatePokemon(Species species, bool isEgg)
@@ -180,8 +211,6 @@ namespace PKHeX.WinForms.Subforms
 
         private void Generate_Click(object sender, EventArgs e)
         {
-            clear();
-
             int teamSize = sldTeamSize.Value;
             bool legendariesOk = chkLegendaries.Checked;
             bool mustEvolve = chkMustEvolve.Checked;
@@ -203,7 +232,14 @@ namespace PKHeX.WinForms.Subforms
 
             int generation = cboGeneration.SelectedItem == null ? sav.Version.GetGeneration() : (int)cboGeneration.SelectedItem;
             int maxSpeciesId = maxSpeciesIdByGeneration[generation];
-            int minSpeciesId = isLimit ? (generation > 1 ? maxSpeciesIdByGeneration[generation - 1] + 1 : 1) : 1;
+            int minSpeciesId = 1;
+            
+            // Use the same logic as PopulateStarterList for consistency
+            if (cboGeneration.SelectedItem != null && isLimit)
+            {
+                // If limit is checked, only use that specific generation
+                minSpeciesId = generation == 1 ? 1 : maxSpeciesIdByGeneration[generation - 1] + 1;
+            }
 
             int starterIndex = 0;
 
@@ -308,13 +344,14 @@ namespace PKHeX.WinForms.Subforms
 
             if (team.Count > 0 && !isSecret)
             {
-                txtDebug.Text = string.Join(Environment.NewLine, team.Select(
+                string teamResults = string.Join(Environment.NewLine, team.Select(
                     x => (Species)x.Species + " (" + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type1, sav.Generation) + (x.PersonalInfo.Type1 == x.PersonalInfo.Type2 ? "" : ", " + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type2, sav.Generation)) + ")"
                 ).ToArray());
+                MessageBox.Show(teamResults, "Generated Team", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-            else
+            else if (team.Count > 0)
             {
-                txtDebug.Text = "Done!";
+                MessageBox.Show("Team generated successfully!", "Done!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
             for (int i = 0; i < team.Count; i++)
