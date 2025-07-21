@@ -101,11 +101,6 @@ namespace PKHeX.WinForms.Subforms
         {
             cboPreset.Items.Clear();
             cboPreset.Items.Add("-- Select Preset --");
-            cboPreset.Items.Add("Classic Starters (Gen 1-3)");
-            cboPreset.Items.Add("Gen 1 Only");
-            cboPreset.Items.Add("Gen 2 Only");
-            cboPreset.Items.Add("Gen 3 Only");
-            cboPreset.Items.Add("All Gens (No Limit)");
             cboPreset.Items.Add("Legendary Focus");
             cboPreset.Items.Add("Starter Pokemon Only");
             cboPreset.SelectedIndex = 0;
@@ -126,38 +121,6 @@ namespace PKHeX.WinForms.Subforms
 
             switch (preset)
             {
-                case "Classic Starters (Gen 1-3)":
-                    cboGeneration.SelectedItem = 3;
-                    chkLimit.Checked = false;
-                    sldTeamSize.Value = 6;
-                    SelectStartersBySpecies(new[] { 1, 4, 7, 152, 155, 158, 252, 255, 258 }); // Bulbasaur, Charmander, Squirtle, Chikorita, Cyndaquil, Totodile, Treecko, Torchic, Mudkip
-                    break;
-                    
-                case "Gen 1 Only":
-                    cboGeneration.SelectedItem = 1;
-                    chkLimit.Checked = true;
-                    sldTeamSize.Value = 6;
-                    break;
-                    
-                case "Gen 2 Only":
-                    cboGeneration.SelectedItem = 2;
-                    chkLimit.Checked = true;
-                    sldTeamSize.Value = 6;
-                    break;
-                    
-                case "Gen 3 Only":
-                    cboGeneration.SelectedItem = 3;
-                    chkLimit.Checked = true;
-                    sldTeamSize.Value = 6;
-                    break;
-                    
-                case "All Gens (No Limit)":
-                    if (cboGeneration.Items.Count > 0)
-                        cboGeneration.SelectedIndex = cboGeneration.Items.Count - 1;
-                    chkLimit.Checked = false;
-                    sldTeamSize.Value = 6;
-                    break;
-                    
                 case "Legendary Focus":
                     if (cboGeneration.Items.Count > 0)
                         cboGeneration.SelectedIndex = cboGeneration.Items.Count - 1;
