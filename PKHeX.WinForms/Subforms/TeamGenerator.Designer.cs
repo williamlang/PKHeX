@@ -38,14 +38,15 @@ namespace PKHeX.WinForms.Subforms
             chkMustEvolve = new System.Windows.Forms.CheckBox();
             chkLegendaries = new System.Windows.Forms.CheckBox();
             lblTeamSize = new System.Windows.Forms.Label();
-            numTeamSize = new System.Windows.Forms.NumericUpDown();
+            sldTeamSize = new System.Windows.Forms.TrackBar();
+            lblTeamSizeValue = new System.Windows.Forms.Label();
             chkSecret = new System.Windows.Forms.CheckBox();
             chkEggs = new System.Windows.Forms.CheckBox();
             Generate = new System.Windows.Forms.Button();
             txtDebug = new System.Windows.Forms.TextBox();
             chkLimit = new System.Windows.Forms.CheckBox();
             grpOptions.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)numTeamSize).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)sldTeamSize).BeginInit();
             SuspendLayout();
             // 
             // grpOptions
@@ -59,7 +60,8 @@ namespace PKHeX.WinForms.Subforms
             grpOptions.Controls.Add(chkMustEvolve);
             grpOptions.Controls.Add(chkLegendaries);
             grpOptions.Controls.Add(lblTeamSize);
-            grpOptions.Controls.Add(numTeamSize);
+            grpOptions.Controls.Add(sldTeamSize);
+            grpOptions.Controls.Add(lblTeamSizeValue);
             grpOptions.Controls.Add(chkSecret);
             grpOptions.Controls.Add(chkEggs);
             grpOptions.Controls.Add(Generate);
@@ -144,15 +146,25 @@ namespace PKHeX.WinForms.Subforms
             lblTeamSize.TabIndex = 7;
             lblTeamSize.Text = "Team Size";
             // 
-            // numTeamSize
+            // sldTeamSize
             // 
-            numTeamSize.Location = new System.Drawing.Point(85, 123);
-            numTeamSize.Maximum = new decimal(new int[] { 6, 0, 0, 0 });
-            numTeamSize.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
-            numTeamSize.Name = "numTeamSize";
-            numTeamSize.Size = new System.Drawing.Size(175, 23);
-            numTeamSize.TabIndex = 6;
-            numTeamSize.Value = new decimal(new int[] { 6, 0, 0, 0 });
+            sldTeamSize.Location = new System.Drawing.Point(85, 123);
+            sldTeamSize.Maximum = 6;
+            sldTeamSize.Minimum = 1;
+            sldTeamSize.Name = "sldTeamSize";
+            sldTeamSize.Size = new System.Drawing.Size(140, 45);
+            sldTeamSize.TabIndex = 6;
+            sldTeamSize.Value = 6;
+            sldTeamSize.ValueChanged += new System.EventHandler(sldTeamSize_ValueChanged);
+            // 
+            // lblTeamSizeValue
+            // 
+            lblTeamSizeValue.AutoSize = true;
+            lblTeamSizeValue.Location = new System.Drawing.Point(231, 125);
+            lblTeamSizeValue.Name = "lblTeamSizeValue";
+            lblTeamSizeValue.Size = new System.Drawing.Size(13, 15);
+            lblTeamSizeValue.TabIndex = 14;
+            lblTeamSizeValue.Text = "6";
             // 
             // chkSecret
             // 
@@ -218,7 +230,7 @@ namespace PKHeX.WinForms.Subforms
             Text = "Team Generator";
             grpOptions.ResumeLayout(false);
             grpOptions.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)numTeamSize).EndInit();
+            ((System.ComponentModel.ISupportInitialize)sldTeamSize).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -230,7 +242,8 @@ namespace PKHeX.WinForms.Subforms
         private System.Windows.Forms.TextBox txtDebug;
         private System.Windows.Forms.CheckBox chkEggs;
         private System.Windows.Forms.Label lblTeamSize;
-        private System.Windows.Forms.NumericUpDown numTeamSize;
+        private System.Windows.Forms.TrackBar sldTeamSize;
+        private System.Windows.Forms.Label lblTeamSizeValue;
         private System.Windows.Forms.CheckBox chkSecret;
         private System.Windows.Forms.CheckBox chkLegendaries;
         private System.Windows.Forms.CheckBox chkMustEvolve;

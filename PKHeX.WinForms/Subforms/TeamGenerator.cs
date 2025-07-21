@@ -55,6 +55,11 @@ namespace PKHeX.WinForms.Subforms
             }
         }
 
+        private void sldTeamSize_ValueChanged(object sender, EventArgs e)
+        {
+            lblTeamSizeValue.Text = sldTeamSize.Value.ToString();
+        }
+
         private void clear()
         {
             txtDebug.Text = "";
@@ -177,7 +182,7 @@ namespace PKHeX.WinForms.Subforms
         {
             clear();
 
-            int teamSize = (int)numTeamSize.Value;
+            int teamSize = sldTeamSize.Value;
             bool legendariesOk = chkLegendaries.Checked;
             bool mustEvolve = chkMustEvolve.Checked;
             bool isEgg = chkEggs.Checked;
