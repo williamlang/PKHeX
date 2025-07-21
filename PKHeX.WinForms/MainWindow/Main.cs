@@ -522,7 +522,7 @@ public partial class Main : Form
         if (this.OpenWindowExists<TeamGenerator>())
             return;
         var form = new TeamGenerator(C_SAV);
-        form.Show();
+        form.Show(this);
     }
 
     // Misc Options

@@ -42,6 +42,7 @@ namespace PKHeX.WinForms.Subforms
                 GameVersion ver = GameUtil.GetVersion((byte)(i + 1));
                 maxSpeciesIdByGeneration[i + 1] = GameUtil.GetMaxSpeciesID(ver);
             }
+            maxSpeciesIdByGeneration[0] = 151; // Gen 1 max species ID
         }
 
         private void clear()
@@ -49,7 +50,7 @@ namespace PKHeX.WinForms.Subforms
             txtDebug.Text = "";
         }
 
-        private PKM CreatePokemon(Species species, bool isEgg)
+        private List<PKM> CreatePokemon(Species species, bool isEgg)
         {
             Random rnd = new Random();
             PKM pokemon = EntityBlank.GetBlank(sav.Generation, sav.Version);
@@ -73,7 +74,9 @@ namespace PKHeX.WinForms.Subforms
             }
 
             // @todo: set default MetLocation
-            pokemon.MetLevel = 5;            
+            pokemon.MetLevel = 5;
+
+            var originalPokemon = pokemon.Clone();
 
             // get the base pokemon to return
             EvolutionTree et = EvolutionTree.GetEvolutionTree(sav.Version.GetContext());
@@ -111,7 +114,7 @@ namespace PKHeX.WinForms.Subforms
             }
 
             // stats, set IVs, EVs
-            
+
             Span<int> ivs = stackalloc int[6];
             EffortValueGrade[] validGrades = { EffortValueGrade.MaxLegal, EffortValueGrade.MaxNearCap, EffortValueGrade.Half, EffortValueGrade.NearFull, EffortValueGrade.MaxEffective };
 
@@ -130,7 +133,7 @@ namespace PKHeX.WinForms.Subforms
             }
 
             Span<int> evs = stackalloc int[6];
-            while (!validGrades.Contains(EffortValues.GetGrade(evs.ToArray().Sum()))) { 
+            while (!validGrades.Contains(EffortValues.GetGrade(evs.ToArray().Sum()))) {
                 EffortValues.SetRandom(evs, sav.Version.GetGeneration());
                 pokemon.SetEVs(evs);
             }
@@ -157,7 +160,7 @@ namespace PKHeX.WinForms.Subforms
             }
 
             pokemon.PID = EntityPID.GetRandomPID(Util.Rand, pokemon.Species, pokemon.Gender, 0, pokemon.Nature, pokemon.Form, 0);
-            return pokemon;
+            return new List<PKM> { pokemon, originalPokemon };
         }
 
         private void Generate_Click(object sender, EventArgs e)
@@ -186,20 +189,22 @@ namespace PKHeX.WinForms.Subforms
 
                 PKM pokemon;
                 PKM originalPokemon;
+                List<PKM> pokemons;
                 if (cboStarter.SelectedItem != null && (Species)cboStarter.SelectedItem != Species.None && team.Count == 0)
                 {
                     Species species = (Species)cboStarter.SelectedItem;
-                    pokemon = CreatePokemon(species, false);
+                    pokemons = CreatePokemon(species, false);
                 }
                 else
                 {
-                    int rand = rnd.Next(minSpeciesId, maxSpeciesId);                  
+                    int rand = rnd.Next(minSpeciesId, maxSpeciesId);
 
                     Species species = (Species)rand;
-                    pokemon = CreatePokemon(species, isEgg);   
+                    pokemons = CreatePokemon(species, isEgg);
                 }
 
-                originalPokemon = pokemon;
+                pokemon = pokemons[0];
+                originalPokemon = pokemons[1];
 
                 if (!legendariesOk)
                 {
@@ -217,8 +222,8 @@ namespace PKHeX.WinForms.Subforms
                 }
 
                 // @todo: this probably doesn't work for the Eevee line
-                var lastEvoPokemon = CreatePokemon((Species)lastEvo.Species, isEgg);
-                var firstEvoPokemon = CreatePokemon((Species)firstEvo.Species, isEgg);
+                var lastEvoPokemon = CreatePokemon((Species)lastEvo.Species, isEgg)[0];
+                var firstEvoPokemon = CreatePokemon((Species)firstEvo.Species, isEgg)[0];
 
                 // check if the first evo pokemon is in the generation and can be added if we're limited
                 if (isLimit)
@@ -259,13 +264,17 @@ namespace PKHeX.WinForms.Subforms
                         // set hatch step counter
                         pokemon.CurrentFriendship = (byte)((team.Count() + 1) * 2);
                     }
-
                     pokemon.ClearNickname();
                     pokemon.Language = sav.Language;
-                    // To set the Pokémon's name to its species name, assign the Nickname property to the default species name.
-                    // Example:
                     pokemon.Nickname = ((Species)pokemon.Species).ToString();
                     pokemon.IsNicknamed = false; // Optional: mark as not nicknamed if needed
+
+                    ushort? evoItem = GetEvolutionItem(originalPokemon);
+                    if (evoItem != null)
+                    {
+                        pokemon.HeldItem = (int)evoItem;
+                    }
+
                     team.Add(pokemon);
                 }
             }
@@ -289,6 +298,39 @@ namespace PKHeX.WinForms.Subforms
                 ISlotInfo slot = new SlotInfoParty(i + 1);
                 editor.NotifySlotChanged(slot, slotType, team[i]);
             }
+        }
+
+        private ushort? GetEvolutionItem(PKM pokemon)
+        {
+            // items
+            var items = GameInfo.Strings.Item;
+            // Get the evolution tree for the current context
+            var et = EvolutionTree.GetEvolutionTree(pokemon.Context);
+            // Get all possible evolutions for this species/form
+            var evolutions = et.Forward.GetForward(pokemon.Species, pokemon.Form);
+            //var evolutions = et.GetEvolutionsAndPreEvolutions(pokemon.Species, pokemon.Form);
+
+            foreach (var evo in evolutions.Span)
+            {
+                if (isItemEvo(evo.Method))
+                {
+                    return evo.Argument;
+                }
+            }
+
+            return null;
+        }
+
+        private Boolean isItemEvo(EvolutionType type)
+        {
+            return type is EvolutionType.TradeHeldItem or
+                EvolutionType.UseItem or
+                EvolutionType.UseItemMale or
+                EvolutionType.UseItemFemale or
+                EvolutionType.LevelUpHeldItemDay or
+                EvolutionType.LevelUpHeldItemNight or
+                EvolutionType.LevelUpWormhole or
+                EvolutionType.UseItemFullMoon;
         }
     }
 }
