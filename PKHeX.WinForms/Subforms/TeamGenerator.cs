@@ -518,6 +518,9 @@ namespace PKHeX.WinForms.Subforms
                 ISlotInfo slot = new SlotInfoParty(i + 1);
                 editor.NotifySlotChanged(slot, slotType, team[i]);
             }
+
+            // Refresh the party display to show the new team
+            editor.SetParty();
         }
 
         private ushort? GetEvolutionItem(PKM pokemon)
