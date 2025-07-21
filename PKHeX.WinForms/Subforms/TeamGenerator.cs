@@ -65,6 +65,15 @@ namespace PKHeX.WinForms.Subforms
             PopulateStarterList();
         }
 
+        private void chkStatLimit_CheckedChanged(object sender, EventArgs e)
+        {
+            bool enabled = chkStatLimit.Checked;
+            lblMinStatTotal.Enabled = enabled;
+            numMinStatTotal.Enabled = enabled;
+            lblMaxStatTotal.Enabled = enabled;
+            numMaxStatTotal.Enabled = enabled;
+        }
+
         private void PopulateStarterList()
         {
             cboStarter.Items.Clear();
@@ -337,6 +346,9 @@ namespace PKHeX.WinForms.Subforms
             bool isBalanced = chkBalanced.Checked;
             bool isLimit = chkLimit.Checked;
             bool allowRegionalForms = chkRegionalForms.Checked;
+            bool hasStatLimit = chkStatLimit.Checked;
+            int minStatTotal = hasStatLimit ? (int)numMinStatTotal.Value : 0;
+            int maxStatTotal = hasStatLimit ? (int)numMaxStatTotal.Value : 999;
             List<byte> types = new List<byte>();
 
             List<PKM> team = new List<PKM>();
@@ -406,6 +418,13 @@ namespace PKHeX.WinForms.Subforms
                 // @todo: this probably doesn't work for the Eevee line
                 var lastEvoPokemon = CreatePokemon((Species)lastEvo.Species, isEgg, allowRegionalForms)[0];
                 var firstEvoPokemon = CreatePokemon((Species)firstEvo.Species, isEgg, allowRegionalForms)[0];
+
+                // Check stat total if limit is enabled
+                if (hasStatLimit)
+                {
+                    int finalEvoStatTotal = lastEvoPokemon.PersonalInfo.GetBaseStatTotal();
+                    pokemonIsOkay = pokemonIsOkay && (finalEvoStatTotal >= minStatTotal && finalEvoStatTotal <= maxStatTotal);
+                }
 
                 // check if the first evo pokemon is in the generation and can be added if we're limited
                 if (isLimit)
