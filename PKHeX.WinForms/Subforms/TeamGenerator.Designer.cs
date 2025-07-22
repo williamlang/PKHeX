@@ -60,6 +60,8 @@ namespace PKHeX.WinForms.Subforms
             lblPreset = new System.Windows.Forms.Label();
             Generate = new System.Windows.Forms.Button();
             btnHelp = new System.Windows.Forms.Button();
+            progressBar = new System.Windows.Forms.ProgressBar();
+            lblProgress = new System.Windows.Forms.Label();
             grpOptions.SuspendLayout();
             grpOutput.SuspendLayout();
             grpPokemonOptions.SuspendLayout();
@@ -131,7 +133,7 @@ namespace PKHeX.WinForms.Subforms
             lblHatchRate.AutoSize = true;
             lblHatchRate.Location = new System.Drawing.Point(10, 78);
             lblHatchRate.Name = "lblHatchRate";
-            lblHatchRate.Size = new System.Drawing.Size(71, 15);
+            lblHatchRate.Size = new System.Drawing.Size(68, 15);
             lblHatchRate.TabIndex = 6;
             lblHatchRate.Text = "Hatch Rate:";
             // 
@@ -385,7 +387,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             // Generate
             // 
-            Generate.Location = new System.Drawing.Point(280, 440);
+            Generate.Location = new System.Drawing.Point(373, 479);
             Generate.Name = "Generate";
             Generate.Size = new System.Drawing.Size(100, 30);
             Generate.TabIndex = 3;
@@ -395,7 +397,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             // btnHelp
             // 
-            btnHelp.Location = new System.Drawing.Point(465, 440);
+            btnHelp.Location = new System.Drawing.Point(479, 479);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new System.Drawing.Size(75, 30);
             btnHelp.TabIndex = 23;
@@ -403,12 +405,31 @@ namespace PKHeX.WinForms.Subforms
             btnHelp.UseVisualStyleBackColor = true;
             btnHelp.Click += btnHelp_Click;
             // 
+            // progressBar
+            // 
+            progressBar.Location = new System.Drawing.Point(12, 545);
+            progressBar.Name = "progressBar";
+            progressBar.Size = new System.Drawing.Size(554, 23);
+            progressBar.TabIndex = 25;
+            progressBar.Visible = false;
+            // 
+            // lblProgress
+            // 
+            lblProgress.AutoSize = true;
+            lblProgress.Location = new System.Drawing.Point(480, 549);
+            lblProgress.Name = "lblProgress";
+            lblProgress.Size = new System.Drawing.Size(0, 15);
+            lblProgress.TabIndex = 26;
+            lblProgress.Visible = false;
+            // 
             // TeamGenerator
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(584, 509);
+            ClientSize = new System.Drawing.Size(584, 580);
             Controls.Add(grpOptions);
+            Controls.Add(progressBar);
+            Controls.Add(lblProgress);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
@@ -428,6 +449,7 @@ namespace PKHeX.WinForms.Subforms
             grpTeamRules.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)sldTeamSize).EndInit();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -463,5 +485,7 @@ namespace PKHeX.WinForms.Subforms
         private System.Windows.Forms.CheckBox chkEvoItems;
         private System.Windows.Forms.Label lblHatchRate;
         private System.Windows.Forms.ComboBox cboHatchRate;
+        private System.Windows.Forms.ProgressBar progressBar;
+        private System.Windows.Forms.Label lblProgress;
     }
 }

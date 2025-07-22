@@ -74,6 +74,11 @@ namespace PKHeX.WinForms.Subforms
 \bullet \b As Eggs:\b0 Generate Pokémon as eggs for hatching\par
   \tab - If team size is 6, the first Pokémon will be automatically hatched\par
   \tab - Eggs have step counters set for hatching simulation\par
+  \tab - \b Hatch Rate:\b0 Controls how quickly eggs will hatch:\par
+  \tab   • \i Fast:\i0 Lower step counter (hatches quickly)\par
+  \tab   • \i Medium:\i0 Moderate step counter (default)\par
+  \tab   • \i Slow:\i0 Higher step counter (takes longer to hatch)\par
+  \tab - Each egg in the team gets progressively higher step counts\par
 \par
 
 \cf2\b IMPORTANT NOTES:\cf0\b0\par

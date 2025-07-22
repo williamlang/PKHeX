@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace PKHeX.WinForms.Subforms
@@ -11,18 +13,22 @@ namespace PKHeX.WinForms.Subforms
 
     // @todo: ideas: provide the evolution item with the pokemon when needed
     // this will help with Eevee's. If they come with the stone it's obvious which one was chosen
-    public partial class TeamGenerator : Form
+    public partial class TeamGenerator : Form, IDisposable
     {
 
         private SAVEditor editor;
         private SaveFile sav;
         Dictionary<int, int> maxSpeciesIdByGeneration;
+        private readonly Random sharedRandom;
+        private bool disposed;
+        private CancellationTokenSource? cancellationTokenSource;
 
         public TeamGenerator(SAVEditor editor)
         {
             InitializeComponent();
             this.editor = editor;
             this.sav = editor.SAV;
+            this.sharedRandom = new Random();
 
             maxSpeciesIdByGeneration = new Dictionary<int, int>();
             for (int i = 0; i < sav.Version.GetGeneration(); i++)
@@ -246,10 +252,9 @@ namespace PKHeX.WinForms.Subforms
 
         private List<PKM> CreatePokemon(Species species, bool isEgg, bool allowRegionalForms, bool useMaxIVs)
         {
-            Random rnd = new Random();
             PKM pokemon = EntityBlank.GetBlank(sav.Generation, sav.Version);
             pokemon.Species = (ushort)species;
-            pokemon.Form = (byte)rnd.Next(0, pokemon.PersonalInfo.FormCount);
+            pokemon.Form = (byte)sharedRandom.Next(0, pokemon.PersonalInfo.FormCount);
             pokemon.Language = sav.Language;
 
             // set trainer info
@@ -279,25 +284,26 @@ namespace PKHeX.WinForms.Subforms
 
             CommonEdits.ClearNickname(pokemon);
 
-            pokemon.Gender = ((byte)rnd.Next(0, 1));
             if (pokemon.PersonalInfo.Genderless)
             {
-                pokemon.Gender = (int)Gender.Random;
+                pokemon.Gender = (int)Gender.Genderless;
             }
-
-            if (pokemon.PersonalInfo.OnlyFemale)
+            else if (pokemon.PersonalInfo.OnlyFemale)
             {
                 pokemon.Gender = (int)Gender.Female;
             }
-
-            if (pokemon.PersonalInfo.OnlyMale)
+            else if (pokemon.PersonalInfo.OnlyMale)
             {
                 pokemon.Gender = (int)Gender.Male;
+            }
+            else
+            {
+                pokemon.Gender = (byte)sharedRandom.Next(2); // 0 = Male, 1 = Female
             }
 
             if (pokemon.PersonalInfo.HasForms)
             {
-                pokemon.Form = (byte)rnd.Next(0, pokemon.PersonalInfo.FormCount - 1);
+                pokemon.Form = (byte)sharedRandom.Next(0, pokemon.PersonalInfo.FormCount - 1);
             }
 
             // Handle regional forms if enabled
@@ -312,7 +318,7 @@ namespace PKHeX.WinForms.Subforms
                     Array.Copy(regionalForms, 0, allForms, 1, regionalForms.Length);
                     
                     // Randomly select from available forms
-                    pokemon.Form = allForms[rnd.Next(allForms.Length)];
+                    pokemon.Form = allForms[sharedRandom.Next(allForms.Length)];
                 }
             }
 
@@ -363,10 +369,10 @@ namespace PKHeX.WinForms.Subforms
             pokemon.ResetPartyStats();
 
             // nature
-            pokemon.Nature = (Nature)rnd.Next(0, 24);
+            pokemon.Nature = (Nature)sharedRandom.Next(0, 24);
 
             // ability
-            pokemon.Ability = rnd.Next(0, pokemon.PersonalInfo.AbilityCount);
+            pokemon.Ability = sharedRandom.Next(0, pokemon.PersonalInfo.AbilityCount);
 
             // moves
             LegalityAnalysis la = new LegalityAnalysis(pokemon);
@@ -385,7 +391,68 @@ namespace PKHeX.WinForms.Subforms
             return new List<PKM> { pokemon, originalPokemon };
         }
 
-        private void Generate_Click(object sender, EventArgs e)
+        private async void Generate_Click(object sender, EventArgs e)
+        {
+            // Cancel any ongoing generation
+            cancellationTokenSource?.Cancel();
+            cancellationTokenSource = new CancellationTokenSource();
+            
+            // Initialize progress tracking
+            ShowProgress(true);
+            progressBar.Value = 0;
+            progressBar.Maximum = sldTeamSize.Value;
+            
+            // Disable the generate button to prevent multiple clicks
+            Generate.Enabled = false;
+            
+            try
+            {
+                await GenerateTeamWithProgressAsync(cancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // Generation was cancelled - this is expected
+                MessageBox.Show("Team generation was cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                // Handle other exceptions
+                MessageBox.Show($"An error occurred during team generation: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                // Re-enable the generate button and hide progress
+                Generate.Enabled = true;
+                ShowProgress(false);
+                cancellationTokenSource?.Dispose();
+                cancellationTokenSource = null;
+            }
+        }
+
+        private void ShowProgress(bool show)
+        {
+            progressBar.Visible = show;
+            if (show)
+            {
+                progressBar.Value = 0;
+            }
+        }
+
+        private async Task UpdateProgressAsync(int current, int total)
+        {
+            if (progressBar.InvokeRequired)
+            {
+                await Task.Run(() => progressBar.Invoke(new Action<int, int>((c, t) => 
+                {
+                    progressBar.Value = Math.Min(c, progressBar.Maximum);
+                }), current, total));
+                return;
+            }
+            
+            progressBar.Value = Math.Min(current, progressBar.Maximum);
+        }
+
+        private async Task GenerateTeamWithProgressAsync(CancellationToken cancellationToken)
         {
             int teamSize = sldTeamSize.Value;
             bool legendariesOk = chkLegendaries.Checked;
@@ -403,7 +470,6 @@ namespace PKHeX.WinForms.Subforms
             List<byte> types = new List<byte>();
 
             List<PKM> team = new List<PKM>();
-            Random rnd = new Random();
 
             // Get selected starters
             List<Species> selectedStarters = new List<Species>();
@@ -424,9 +490,23 @@ namespace PKHeX.WinForms.Subforms
             }
 
             int starterIndex = 0;
+            int attempts = 0;
+            const int maxAttempts = 1000;
+            
+            // Initial progress update
+            await UpdateProgressAsync(0, teamSize);
 
-            while (team.Count() < teamSize)
+            while (team.Count() < teamSize && attempts < maxAttempts)
             {
+                // Check for cancellation
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Yield control periodically to keep UI responsive
+                if (attempts % 10 == 0)
+                {
+                    await Task.Delay(1, cancellationToken);
+                }
+
                 bool pokemonIsOkay = true;
 
                 PKM pokemon;
@@ -442,7 +522,7 @@ namespace PKHeX.WinForms.Subforms
                 }
                 else
                 {
-                    int rand = rnd.Next(minSpeciesId, maxSpeciesId);
+                    int rand = sharedRandom.Next(minSpeciesId, maxSpeciesId);
 
                     Species species = (Species)rand;
                     pokemons = CreatePokemon(species, isEgg, allowRegionalForms, useMaxIVs);
@@ -535,7 +615,18 @@ namespace PKHeX.WinForms.Subforms
                     }
 
                     team.Add(pokemon);
+                    
+                    // Update progress asynchronously
+                    await UpdateProgressAsync(team.Count, teamSize);
                 }
+                
+                attempts++;
+            }
+
+            // Check if we couldn't generate the full team
+            if (team.Count < teamSize)
+            {
+                throw new InvalidOperationException($"Could only generate {team.Count} out of {teamSize} Pokémon after {maxAttempts} attempts. Try relaxing your criteria.");
             }
 
             for (int i = 0; i < team.Count; i++)
