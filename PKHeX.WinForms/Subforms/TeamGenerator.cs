@@ -435,17 +435,19 @@ namespace PKHeX.WinForms.Subforms
             if (show)
             {
                 progressBar.Value = 0;
+                // Force immediate UI update
+                progressBar.Refresh();
             }
         }
 
-        private async Task UpdateProgressAsync(int current, int total)
+        private void UpdateProgress(int current, int total)
         {
             if (progressBar.InvokeRequired)
             {
-                await Task.Run(() => progressBar.Invoke(new Action<int, int>((c, t) => 
+                progressBar.Invoke(new Action<int, int>((c, t) => 
                 {
                     progressBar.Value = Math.Min(c, progressBar.Maximum);
-                }), current, total));
+                }), current, total);
                 return;
             }
             
@@ -494,17 +496,19 @@ namespace PKHeX.WinForms.Subforms
             const int maxAttempts = 1000;
             
             // Initial progress update
-            await UpdateProgressAsync(0, teamSize);
+            UpdateProgress(0, teamSize);
 
             while (team.Count() < teamSize && attempts < maxAttempts)
             {
                 // Check for cancellation
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                // Yield control periodically to keep UI responsive
-                if (attempts % 10 == 0)
+                // Yield control less frequently for better performance
+                if (attempts % 50 == 0)
                 {
                     await Task.Delay(1, cancellationToken);
+                    // Also update progress during long generation attempts
+                    UpdateProgress(team.Count, teamSize);
                 }
 
                 bool pokemonIsOkay = true;
@@ -616,8 +620,8 @@ namespace PKHeX.WinForms.Subforms
 
                     team.Add(pokemon);
                     
-                    // Update progress asynchronously
-                    await UpdateProgressAsync(team.Count, teamSize);
+                    // Update progress immediately
+                    UpdateProgress(team.Count, teamSize);
                 }
                 
                 attempts++;
