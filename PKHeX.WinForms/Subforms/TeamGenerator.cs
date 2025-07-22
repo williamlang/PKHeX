@@ -10,7 +10,6 @@ using System.Windows.Forms;
 
 namespace PKHeX.WinForms.Subforms
 {
-
     // @todo: ideas: provide the evolution item with the pokemon when needed
     // this will help with Eevee's. If they come with the stone it's obvious which one was chosen
     public partial class TeamGenerator : Form, IDisposable
@@ -22,6 +21,7 @@ namespace PKHeX.WinForms.Subforms
         private readonly Random sharedRandom;
         private bool disposed;
         private CancellationTokenSource? cancellationTokenSource;
+        private GenerationSpeciesProvider? speciesProvider;
 
         public TeamGenerator(SAVEditor editor)
         {
@@ -33,12 +33,15 @@ namespace PKHeX.WinForms.Subforms
             maxSpeciesIdByGeneration = new Dictionary<int, int>();
             for (int i = 0; i < sav.Version.GetGeneration(); i++)
             {
-                cboGeneration.Items.Add(i + 1);
+                cboGeneration.Items.Add($"Gen {i + 1}");
                 GameVersion ver = GameUtil.GetVersion((byte)(i + 1));
                 maxSpeciesIdByGeneration[i + 1] = GameUtil.GetMaxSpeciesID(ver);
             }
             // Add a hard-coded Generation 1 maximum since GameUtil might not handle Gen 1 properly
             maxSpeciesIdByGeneration[1] = 151;
+
+            // Initialize the species provider for regional form support
+            speciesProvider = new GenerationSpeciesProvider(sav);
 
             PopulateStarterList();
             PopulatePresets();
@@ -82,14 +85,10 @@ namespace PKHeX.WinForms.Subforms
             lblTeamSizeValue.Text = sldTeamSize.Value.ToString();
         }
 
-        private void cboGeneration_SelectedIndexChanged(object sender, EventArgs e)
+        private void cboGeneration_ItemCheck(object sender, ItemCheckEventArgs e)
         {
-            PopulateStarterList();
-        }
-
-        private void chkLimit_CheckedChanged(object sender, EventArgs e)
-        {
-            PopulateStarterList();
+            // Use BeginInvoke to ensure the CheckedItems collection is updated
+            BeginInvoke(new Action(() => PopulateStarterList()));
         }
 
         private void chkStatLimit_CheckedChanged(object sender, EventArgs e)
@@ -116,31 +115,51 @@ namespace PKHeX.WinForms.Subforms
         {
             cboStarter.Items.Clear();
 
-            int maxSpeciesId = sav.Version.GetMaxSpeciesID();
-            int minSpeciesId = 1;
-
-            // If a generation is selected, use that generation's max
-            if (cboGeneration.SelectedItem != null)
+            // Get selected generations from the generation CheckedListBox
+            var selectedGenerations = new List<int>();
+            for (int i = 0; i < cboGeneration.CheckedItems.Count; i++)
             {
-                int selectedGeneration = (int)cboGeneration.SelectedItem;
-                maxSpeciesId = maxSpeciesIdByGeneration[selectedGeneration];
-                
-                // If limit is checked, only show that specific generation
-                if (chkLimit.Checked)
+                string? item = cboGeneration.CheckedItems[i]?.ToString();
+                if (!string.IsNullOrEmpty(item) && item.StartsWith("Gen ") && int.TryParse(item.Substring(4), out int gen))
                 {
-                    // For Gen 1, start at 1. For other generations, start after the previous generation's max
-                    minSpeciesId = selectedGeneration == 1 ? 1 : maxSpeciesIdByGeneration[selectedGeneration - 1] + 1;
-                }
-                // If limit is not checked, show all pokemon from gen 1 up to selected generation
-                else
-                {
-                    minSpeciesId = 1;
+                    selectedGenerations.Add(gen);
                 }
             }
 
-            for (int i = minSpeciesId; i <= maxSpeciesId; i++)
+            // If no generations are selected, don't show any Pokémon
+            if (selectedGenerations.Count == 0)
             {
-                cboStarter.Items.Add((Species)i);
+                return;
+            }
+
+            // Use the species provider to get Pokémon from selected generations
+            if (speciesProvider != null)
+            {
+                var availableSpecies = speciesProvider.GetMultiGenerationPool(selectedGenerations);
+                
+                // Add base species first (form 0)
+                var baseSpeciesAdded = new HashSet<ushort>();
+                foreach (var speciesForm in availableSpecies)
+                {
+                    if (speciesForm.Form == 0 && !baseSpeciesAdded.Contains(speciesForm.Species))
+                    {
+                        cboStarter.Items.Add((Species)speciesForm.Species);
+                        baseSpeciesAdded.Add(speciesForm.Species);
+                    }
+                }
+                
+                // Add regional forms as separate entries
+                foreach (var speciesForm in availableSpecies)
+                {
+                    if (speciesForm.Form > 0)
+                    {
+                        string regionalFormName = GetRegionalFormName(speciesForm.Species, speciesForm.Form);
+                        string formName = !string.IsNullOrEmpty(regionalFormName) 
+                            ? $"{(Species)speciesForm.Species} ({regionalFormName})"
+                            : $"{(Species)speciesForm.Species} (Form {speciesForm.Form})";
+                        cboStarter.Items.Add(formName);
+                    }
+                }
             }
         }
 
@@ -170,16 +189,20 @@ namespace PKHeX.WinForms.Subforms
             {
                 case "Legendary Focus":
                     if (cboGeneration.Items.Count > 0)
-                        cboGeneration.SelectedIndex = cboGeneration.Items.Count - 1;
-                    chkLimit.Checked = false;
+                    {
+                        // Select the latest generation
+                        cboGeneration.SetItemChecked(cboGeneration.Items.Count - 1, true);
+                    }
                     sldTeamSize.Value = 3;
                     SelectLegendaryPokemon();
                     break;
                     
                 case "Starter Pokemon Only":
                     if (cboGeneration.Items.Count > 0)
-                        cboGeneration.SelectedIndex = cboGeneration.Items.Count - 1;
-                    chkLimit.Checked = false;
+                    {
+                        // Select the latest generation
+                        cboGeneration.SetItemChecked(cboGeneration.Items.Count - 1, true);
+                    }
                     sldTeamSize.Value = 6;
                     SelectAllStarters();
                     break;
@@ -190,8 +213,8 @@ namespace PKHeX.WinForms.Subforms
         {
             for (int i = 0; i < cboStarter.Items.Count; i++)
             {
-                Species species = (Species)cboStarter.Items[i];
-                if (speciesIds.Contains((int)species))
+                object item = cboStarter.Items[i];
+                if (item is Species species && speciesIds.Contains((int)species))
                 {
                     cboStarter.SetItemChecked(i, true);
                 }
@@ -207,8 +230,8 @@ namespace PKHeX.WinForms.Subforms
 
             for (int i = 0; i < cboStarter.Items.Count && cboStarter.CheckedItems.Count < 6; i++)
             {
-                Species species = (Species)cboStarter.Items[i];
-                if (legendaryIds.Contains((int)species))
+                object item = cboStarter.Items[i];
+                if (item is Species species && legendaryIds.Contains((int)species))
                 {
                     cboStarter.SetItemChecked(i, true);
                 }
@@ -231,8 +254,8 @@ namespace PKHeX.WinForms.Subforms
             int checkedCount = 0;
             for (int i = 0; i < cboStarter.Items.Count && checkedCount < 6; i++)
             {
-                Species species = (Species)cboStarter.Items[i];
-                if (starterIds.Contains((int)species))
+                object item = cboStarter.Items[i];
+                if (item is Species species && starterIds.Contains((int)species))
                 {
                     cboStarter.SetItemChecked(i, true);
                     checkedCount++;
@@ -254,7 +277,7 @@ namespace PKHeX.WinForms.Subforms
         {
             PKM pokemon = EntityBlank.GetBlank(sav.Generation, sav.Version);
             pokemon.Species = (ushort)species;
-            pokemon.Form = (byte)sharedRandom.Next(0, pokemon.PersonalInfo.FormCount);
+            pokemon.Form = 0; // Start with base form, will be set properly later
             pokemon.Language = sav.Language;
 
             // set trainer info
@@ -279,8 +302,9 @@ namespace PKHeX.WinForms.Subforms
 
             // get the base pokemon to return
             EvolutionTree et = EvolutionTree.GetEvolutionTree(sav.Version.GetContext());
-            var baby = et.GetBaseSpeciesForm((ushort)species, pokemon.Form);
+            var baby = et.GetBaseSpeciesForm((ushort)species, 0); // Always use form 0 for base species lookup
             pokemon.Species = baby.Species;
+            pokemon.Form = baby.Form; // This will be the correct base form
 
             CommonEdits.ClearNickname(pokemon);
 
@@ -301,12 +325,7 @@ namespace PKHeX.WinForms.Subforms
                 pokemon.Gender = (byte)sharedRandom.Next(2); // 0 = Male, 1 = Female
             }
 
-            if (pokemon.PersonalInfo.HasForms)
-            {
-                pokemon.Form = (byte)sharedRandom.Next(0, pokemon.PersonalInfo.FormCount - 1);
-            }
-
-            // Handle regional forms if enabled
+            // Handle forms AFTER setting base species and gender
             if (allowRegionalForms && HasRegionalForm(pokemon.Species, sav.Version.GetContext()))
             {
                 var regionalForms = GetAvailableRegionalForms(pokemon.Species, sav.Version.GetContext());
@@ -321,6 +340,12 @@ namespace PKHeX.WinForms.Subforms
                     pokemon.Form = allForms[sharedRandom.Next(allForms.Length)];
                 }
             }
+            else if (pokemon.PersonalInfo.HasForms)
+            {
+                // Only randomize forms if we're not handling regional forms specifically
+                // Use the correct FormCount without subtracting 1
+                pokemon.Form = (byte)sharedRandom.Next(0, pokemon.PersonalInfo.FormCount);
+            }
 
             if (isEgg)
             {
@@ -331,6 +356,129 @@ namespace PKHeX.WinForms.Subforms
 
             // stats, set IVs, EVs
 
+            Span<int> ivs = stackalloc int[6];
+            EffortValueGrade[] validGrades = { EffortValueGrade.MaxLegal, EffortValueGrade.MaxNearCap, EffortValueGrade.Half, EffortValueGrade.NearFull, EffortValueGrade.MaxEffective };
+
+            if (sav.Generation <= 2)
+            {
+                validGrades = validGrades.Concat(new EffortValueGrade[] { EffortValueGrade.Quarter, EffortValueGrade.Illegal }).ToArray();
+            }
+
+            if (useMaxIVs)
+            {
+                // Set maximum IVs (31 for each stat)
+                for (int i = 0; i < 6; i++)
+                {
+                    ivs[i] = 31;
+                }
+                pokemon.SetIVs(ivs);
+            }
+            else
+            {
+                while (!validGrades.Contains(EffortValues.GetGrade(ivs.ToArray().Sum()))) {
+                    pokemon.SetRandomIVs();
+
+                    for (int i = 0; i < 6; i++)
+                    {
+                        ivs[i] = pokemon.GetIV(i);
+                    }
+                }
+            }
+
+            Span<int> evs = stackalloc int[6];
+            while (!validGrades.Contains(EffortValues.GetGrade(evs.ToArray().Sum()))) {
+                EffortValues.SetRandom(evs, sav.Version.GetGeneration());
+                pokemon.SetEVs(evs);
+            }
+
+            pokemon.ResetPartyStats();
+
+            // nature
+            pokemon.Nature = (Nature)sharedRandom.Next(0, 24);
+
+            // ability
+            pokemon.Ability = sharedRandom.Next(0, pokemon.PersonalInfo.AbilityCount);
+
+            // moves
+            LegalityAnalysis la = new LegalityAnalysis(pokemon);
+            Span<ushort> moves = stackalloc ushort[4];
+            la.GetSuggestedCurrentMoves(moves, MoveSourceType.None);
+            pokemon.SetMoves(moves);
+
+            pokemon.IsEgg = isEgg;
+            if (pokemon.IsEgg)
+            {
+                pokemon.Nickname = "Egg";
+                pokemon.IsNicknamed = true;
+            }
+
+            pokemon.PID = EntityPID.GetRandomPID(Util.Rand, pokemon.Species, pokemon.Gender, 0, pokemon.Nature, pokemon.Form, 0);
+            return new List<PKM> { pokemon, originalPokemon };
+        }
+
+        private List<PKM> CreatePokemonWithForm(SpeciesForm speciesForm, bool isEgg, bool useMaxIVs)
+        {
+            PKM pokemon = EntityBlank.GetBlank(sav.Generation, sav.Version);
+            pokemon.Species = speciesForm.Species;
+            pokemon.Form = speciesForm.Form;
+            pokemon.Language = sav.Language;
+
+            // set trainer info
+            TrainerInfoExtensions.ApplyTo(sav, pokemon);
+
+            // get met information from first party pokemon?
+            if (sav.PartyData.Count > 0)
+            {
+                if (sav.PartyData[0].MetDate != null)
+                {
+                    pokemon.MetDate = sav.PartyData[0].MetDate;
+                }
+
+                // set the MetLocation to the first pokemon in the party if there is one
+                pokemon.MetLocation = sav.PartyData[0].MetLocation;
+            }
+
+            // @todo: set default MetLocation
+            pokemon.MetLevel = 5;
+
+            var originalPokemon = pokemon.Clone();
+
+            // get the base pokemon to return
+            EvolutionTree et = EvolutionTree.GetEvolutionTree(sav.Version.GetContext());
+            var baby = et.GetBaseSpeciesForm(speciesForm.Species, speciesForm.Form);
+            pokemon.Species = baby.Species;
+            pokemon.Form = baby.Form;
+
+            CommonEdits.ClearNickname(pokemon);
+
+            if (pokemon.PersonalInfo.Genderless)
+            {
+                pokemon.Gender = (int)Gender.Genderless;
+            }
+            else if (pokemon.PersonalInfo.OnlyFemale)
+            {
+                pokemon.Gender = (int)Gender.Female;
+            }
+            else if (pokemon.PersonalInfo.OnlyMale)
+            {
+                pokemon.Gender = (int)Gender.Male;
+            }
+            else
+            {
+                pokemon.Gender = (byte)sharedRandom.Next(2); // 0 = Male, 1 = Female
+            }
+
+            // Don't randomize form since it's already set by the species provider
+            // Keep the form as specified by the SpeciesForm
+
+            if (isEgg)
+            {
+                pokemon.MetLevel = 1;
+                pokemon.CurrentLevel = 1;
+                pokemon.EXP = Experience.GetEXP(pokemon.CurrentLevel, pokemon.PersonalInfo.EXPGrowth);
+            }
+
+            // stats, set IVs, EVs
             Span<int> ivs = stackalloc int[6];
             EffortValueGrade[] validGrades = { EffortValueGrade.MaxLegal, EffortValueGrade.MaxNearCap, EffortValueGrade.Half, EffortValueGrade.NearFull, EffortValueGrade.MaxEffective };
 
@@ -462,7 +610,6 @@ namespace PKHeX.WinForms.Subforms
             bool isEgg = chkEggs.Checked;
             bool isSecret = chkSecret.Checked;
             bool isBalanced = chkBalanced.Checked;
-            bool isLimit = chkLimit.Checked;
             bool allowRegionalForms = chkRegionalForms.Checked;
             bool hasStatLimit = chkStatLimit.Checked;
             bool useMaxIVs = chkMaxIVs.Checked;
@@ -473,22 +620,53 @@ namespace PKHeX.WinForms.Subforms
 
             List<PKM> team = new List<PKM>();
 
-            // Get selected starters
+            // Get selected starters - handle both Species objects and string representations of regional forms
             List<Species> selectedStarters = new List<Species>();
-            foreach (Species species in cboStarter.CheckedItems)
+            foreach (object item in cboStarter.CheckedItems)
             {
-                selectedStarters.Add(species);
+                if (item is Species species)
+                {
+                    selectedStarters.Add(species);
+                }
+                // Note: Regional form strings will be handled by the generation pool system
+                // We don't need to parse them here since they're already in the availableSpecies list
             }
 
-            int generation = cboGeneration.SelectedItem == null ? sav.Version.GetGeneration() : (int)cboGeneration.SelectedItem;
-            int maxSpeciesId = maxSpeciesIdByGeneration[generation];
-            int minSpeciesId = 1;
-            
-            // Use the same logic as PopulateStarterList for consistency
-            if (cboGeneration.SelectedItem != null && isLimit)
+            // Get selected generations from the generation CheckedListBox
+            var selectedGenerations = new List<int>();
+            for (int i = 0; i < cboGeneration.CheckedItems.Count; i++)
             {
-                // If limit is checked, only use that specific generation
-                minSpeciesId = generation == 1 ? 1 : maxSpeciesIdByGeneration[generation - 1] + 1;
+                string? item = cboGeneration.CheckedItems[i]?.ToString();
+                if (!string.IsNullOrEmpty(item) && item.StartsWith("Gen ") && int.TryParse(item.Substring(4), out int gen))
+                {
+                    selectedGenerations.Add(gen);
+                }
+            }
+            
+            // Use the new species provider for generation pools including regional forms
+            List<SpeciesForm> availableSpecies;
+            if (speciesProvider != null && selectedGenerations.Count > 0)
+            {
+                availableSpecies = speciesProvider.GetMultiGenerationPool(selectedGenerations);
+            }
+            else
+            {
+                // Fallback: use all generations if none selected
+                int generation = sav.Version.GetGeneration();
+                if (speciesProvider != null)
+                {
+                    availableSpecies = speciesProvider.GetGenerationPool(generation, false);
+                }
+                else
+                {
+                    // Last resort fallback to old method
+                    int maxSpeciesId = sav.Version.GetMaxSpeciesID();
+                    availableSpecies = new List<SpeciesForm>();
+                    for (int i = 1; i <= maxSpeciesId; i++)
+                    {
+                        availableSpecies.Add(new SpeciesForm((ushort)i, 0));
+                    }
+                }
             }
 
             int starterIndex = 0;
@@ -526,10 +704,20 @@ namespace PKHeX.WinForms.Subforms
                 }
                 else
                 {
-                    int rand = sharedRandom.Next(minSpeciesId, maxSpeciesId);
-
-                    Species species = (Species)rand;
-                    pokemons = CreatePokemon(species, isEgg, allowRegionalForms, useMaxIVs);
+                    // Select from the available species pool (including regional forms)
+                    if (availableSpecies.Count > 0)
+                    {
+                        var randomIndex = sharedRandom.Next(availableSpecies.Count);
+                        var selectedSpecies = availableSpecies[randomIndex];
+                        pokemons = CreatePokemonWithForm(selectedSpecies, isEgg, useMaxIVs);
+                    }
+                    else
+                    {
+                        // Fallback to old method if no species available
+                        int rand = sharedRandom.Next(1, sav.Version.GetMaxSpeciesID());
+                        Species species = (Species)rand;
+                        pokemons = CreatePokemon(species, isEgg, allowRegionalForms, useMaxIVs);
+                    }
                 }
 
                 pokemon = pokemons[0];
@@ -561,14 +749,13 @@ namespace PKHeX.WinForms.Subforms
                     pokemonIsOkay = pokemonIsOkay && (finalEvoStatTotal >= minStatTotal && finalEvoStatTotal <= maxStatTotal);
                 }
 
-                // check if the first evo pokemon is in the generation and can be added if we're limited
-                if (isLimit)
+                // check if the first evo pokemon is in the current available species
+                // Check if this species is in the current generation pool
+                bool isInGenerationPool = availableSpecies.Any(sf => sf.Species == firstEvoPokemon.Species);
+                if (isInGenerationPool)
                 {
-                    if (firstEvoPokemon.Species >= minSpeciesId && firstEvoPokemon.Species <= maxSpeciesIdByGeneration[generation])
-                    {
-                        // we're okay
-                        pokemon = firstEvoPokemon;
-                    }
+                    // we're okay
+                    pokemon = firstEvoPokemon;
                 }
 
                 if (isBalanced)
@@ -648,7 +835,7 @@ namespace PKHeX.WinForms.Subforms
             if (team.Count > 0 && !isSecret)
             {
                 string teamResults = string.Join(Environment.NewLine, team.Select(
-                    x => (Species)x.Species + " (" + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type1, sav.Generation) + (x.PersonalInfo.Type1 == x.PersonalInfo.Type2 ? "" : ", " + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type2, sav.Generation)) + ")"
+                    x => GetPokemonDisplayName(x) + " (" + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type1, sav.Generation) + (x.PersonalInfo.Type1 == x.PersonalInfo.Type2 ? "" : ", " + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type2, sav.Generation)) + ")"
                 ).ToArray());
                 MessageBox.Show(teamResults, "Generated Team", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -688,6 +875,68 @@ namespace PKHeX.WinForms.Subforms
                 EvolutionType.LevelUpHeldItemNight or
                 EvolutionType.LevelUpWormhole or
                 EvolutionType.UseItemFullMoon;
+        }
+
+        /// <summary>
+        /// Gets the display name for a Pokémon, including form information for regional variants.
+        /// </summary>
+        private string GetPokemonDisplayName(PKM pokemon)
+        {
+            string baseName = ((Species)pokemon.Species).ToString();
+            
+            if (pokemon.Form == 0)
+            {
+                return baseName;
+            }
+            
+            // Get form-specific name for regional variants
+            string formName = GetRegionalFormName(pokemon.Species, pokemon.Form);
+            if (!string.IsNullOrEmpty(formName))
+            {
+                return $"{baseName} ({formName})";
+            }
+            
+            // Fallback for other forms
+            return $"{baseName} (Form {pokemon.Form})";
+        }
+
+        /// <summary>
+        /// Gets the regional form name for known regional variants.
+        /// </summary>
+        private string GetRegionalFormName(ushort species, byte form)
+        {
+            // Handle special cases first
+            if (species == (int)Species.Meowth && form == 2)
+                return "Galarian";
+            
+            if (species == (int)Species.Tauros && form >= 1 && form <= 3)
+            {
+                return form switch
+                {
+                    1 => "Paldean Combat",
+                    2 => "Paldean Blaze", 
+                    3 => "Paldean Aqua",
+                    _ => "Paldean"
+                };
+            }
+            
+            // Most regional forms are form 1
+            if (form == 1)
+            {
+                // Check for Paldean forms first (Gen 9)
+                if (IsKnownPaldeanSpecies(species))
+                    return "Paldean";
+                
+                // Check for Galarian forms (Gen 8)
+                if (IsKnownGalarianSpecies(species))
+                    return "Galarian";
+                
+                // Check for Alolan forms (Gen 7)
+                if (IsKnownAlolanSpecies(species))
+                    return "Alolan";
+            }
+            
+            return string.Empty;
         }
 
         /// <summary>
@@ -817,6 +1066,285 @@ namespace PKHeX.WinForms.Subforms
                 (int)Species.Tauros or (int)Species.Wooper => true,
                 _ => false
             };
+        }
+    }
+
+    public struct SpeciesForm
+    {
+        public ushort Species { get; }
+        public byte Form { get; }
+
+        public SpeciesForm(ushort species, byte form)
+        {
+            Species = species;
+            Form = form;
+        }
+
+        public override string ToString()
+        {
+            return Form == 0 ? $"{(Species)Species}" : $"{(Species)Species}-{Form}";
+        }
+    }
+
+    public class GenerationSpeciesProvider
+    {
+        private readonly SaveFile _saveFile;
+        private readonly Dictionary<int, List<SpeciesForm>> _generationPools;
+        private readonly Dictionary<(ushort species, byte form), int> _regionalFormOrigins;
+        private static readonly Dictionary<EntityContext, Dictionary<(ushort, byte), int>> _cachedRegionalForms = new();
+
+        public GenerationSpeciesProvider(SaveFile saveFile)
+        {
+            _saveFile = saveFile;
+            _regionalFormOrigins = GetRegionalFormOrigins(saveFile.Version.GetContext());
+            _generationPools = BuildGenerationPools();
+        }
+
+        private Dictionary<(ushort species, byte form), int> GetRegionalFormOrigins(EntityContext context)
+        {
+            if (_cachedRegionalForms.TryGetValue(context, out var cached))
+                return cached;
+
+            var regionalForms = new Dictionary<(ushort species, byte form), int>();
+            var maxSpecies = _saveFile.Version.GetMaxSpeciesID();
+
+            for (ushort species = 1; species <= maxSpecies; species++)
+            {
+                if (!_saveFile.Personal.IsSpeciesInGame(species))
+                    continue;
+
+                var personalInfo = _saveFile.Personal[species];
+                var formCount = personalInfo.FormCount;
+
+                for (byte form = 1; form < formCount; form++)
+                {
+                    if (!_saveFile.Personal.IsPresentInGame(species, form))
+                        continue;
+
+                    var generationIntroduced = GetRegionalFormGeneration(species, form, context);
+                    if (generationIntroduced > 0)
+                    {
+                        regionalForms[(species, form)] = generationIntroduced;
+                    }
+                }
+            }
+
+            _cachedRegionalForms[context] = regionalForms;
+            return regionalForms;
+        }
+
+        private int GetRegionalFormGeneration(ushort species, byte form, EntityContext context)
+        {
+            return context.Generation() switch
+            {
+                7 => IsAlolanForm(species, form) ? 7 : 0,
+                8 => IsGalarianForm(species, form) ? 8 : (IsAlolanForm(species, form) ? 7 : 0),
+                9 => IsPaldeanForm(species, form) ? 9 : (IsGalarianForm(species, form) ? 8 : (IsAlolanForm(species, form) ? 7 : 0)),
+                _ => 0
+            };
+        }
+
+        private bool IsAlolanForm(ushort species, byte form)
+        {
+            if (form != 1) return false;
+
+            try
+            {
+                var baseForm = _saveFile.Personal[species, 0];
+                var regionalForm = _saveFile.Personal[species, form];
+
+                return baseForm.Type1 != regionalForm.Type1 || 
+                       baseForm.Type2 != regionalForm.Type2 ||
+                       HasSignificantStatDifference(baseForm, regionalForm);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsGalarianForm(ushort species, byte form)
+        {
+            if (form != 1 && !(species == (int)Species.Meowth && form == 2))
+                return false;
+
+            try
+            {
+                var baseForm = _saveFile.Personal[species, 0];
+                var regionalForm = _saveFile.Personal[species, form];
+
+                return _saveFile.Version.GetContext().Generation() >= 8 &&
+                       (baseForm.Type1 != regionalForm.Type1 || 
+                        baseForm.Type2 != regionalForm.Type2 ||
+                        HasSignificantStatDifference(baseForm, regionalForm));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsPaldeanForm(ushort species, byte form)
+        {
+            if (_saveFile.Version.GetContext().Generation() < 9)
+                return false;
+
+            try
+            {
+                if (species == (int)Species.Tauros && form >= 1 && form <= 3)
+                    return true;
+
+                if (species == (int)Species.Wooper && form == 1)
+                    return true;
+
+                var baseForm = _saveFile.Personal[species, 0];
+                var regionalForm = _saveFile.Personal[species, form];
+
+                return baseForm.Type1 != regionalForm.Type1 || 
+                       baseForm.Type2 != regionalForm.Type2 ||
+                       HasSignificantStatDifference(baseForm, regionalForm);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool HasSignificantStatDifference(IPersonalInfo baseForm, IPersonalInfo regionalForm)
+        {
+            var baseTotal = baseForm.GetBaseStatTotal();
+            var regionalTotal = regionalForm.GetBaseStatTotal();
+            
+            return Math.Abs(baseTotal - regionalTotal) > 50 ||
+                   Math.Abs(baseForm.HP - regionalForm.HP) > 20 ||
+                   Math.Abs(baseForm.ATK - regionalForm.ATK) > 30 ||
+                   Math.Abs(baseForm.DEF - regionalForm.DEF) > 30;
+        }
+
+        private Dictionary<int, List<SpeciesForm>> BuildGenerationPools()
+        {
+            var pools = new Dictionary<int, List<SpeciesForm>>();
+            
+            for (int gen = 1; gen <= _saveFile.Version.GetGeneration(); gen++)
+            {
+                pools[gen] = new List<SpeciesForm>();
+                
+                int minSpecies = GetGenerationMinSpecies(gen);
+                int maxSpecies = GetGenerationMaxSpecies(gen);
+                
+                // Add base species that were introduced in this generation
+                for (int species = minSpecies; species <= maxSpecies; species++)
+                {
+                    if (_saveFile.Personal.IsSpeciesInGame((ushort)species))
+                    {
+                        pools[gen].Add(new SpeciesForm((ushort)species, 0));
+                    }
+                }
+                
+                // Add regional variants that originated in this generation
+                AddRegionalVariantsForGeneration(pools[gen], gen);
+                
+                // IMPORTANT: Also add base species when their regional forms are introduced
+                // This allows base species to appear in later generations when their regional forms debut
+                AddBaseSpeciesForRegionalForms(pools[gen], gen);
+            }
+            
+            return pools;
+        }
+
+        /// <summary>
+        /// Adds base species (form 0) to a generation pool when their regional forms are introduced in that generation.
+        /// This ensures that when you select Gen 7, you get both regular Geodude and Alolan Geodude.
+        /// </summary>
+        private void AddBaseSpeciesForRegionalForms(List<SpeciesForm> pool, int generation)
+        {
+            foreach (var ((species, form), originGeneration) in _regionalFormOrigins)
+            {
+                if (originGeneration == generation && form > 0)
+                {
+                    // Check if the base species (form 0) is already in this pool
+                    bool baseSpeciesExists = pool.Any(sf => sf.Species == species && sf.Form == 0);
+                    
+                    if (!baseSpeciesExists && _saveFile.Personal.IsSpeciesInGame(species))
+                    {
+                        // Add the base species (form 0) to this generation's pool
+                        pool.Add(new SpeciesForm(species, 0));
+                    }
+                }
+            }
+        }
+
+        private void AddRegionalVariantsForGeneration(List<SpeciesForm> pool, int generation)
+        {
+            foreach (var ((species, form), originGeneration) in _regionalFormOrigins)
+            {
+                if (originGeneration == generation)
+                {
+                    pool.Add(new SpeciesForm(species, form));
+                }
+            }
+        }
+
+        public List<SpeciesForm> GetGenerationPool(int generation, bool limitToGeneration)
+        {
+            if (limitToGeneration)
+            {
+                return _generationPools.ContainsKey(generation) 
+                    ? _generationPools[generation] 
+                    : new List<SpeciesForm>();
+            }
+            
+            var combinedPool = new List<SpeciesForm>();
+            for (int gen = 1; gen <= generation; gen++)
+            {
+                if (_generationPools.ContainsKey(gen))
+                {
+                    combinedPool.AddRange(_generationPools[gen]);
+                }
+            }
+            return combinedPool;
+        }
+
+        public List<SpeciesForm> GetMultiGenerationPool(List<int> selectedGenerations)
+        {
+            var combinedPool = new List<SpeciesForm>();
+            foreach (int generation in selectedGenerations)
+            {
+                if (_generationPools.ContainsKey(generation))
+                {
+                    combinedPool.AddRange(_generationPools[generation]);
+                }
+            }
+            return combinedPool;
+        }
+
+        private int GetGenerationMinSpecies(int generation)
+        {
+            var generationLimits = new Dictionary<int, int>
+            {
+                { 1, 151 }, { 2, 251 }, { 3, 386 }, { 4, 493 }, 
+                { 5, 649 }, { 6, 721 }, { 7, 809 }, { 8, 905 }, { 9, 1010 }
+            };
+            
+            return generation == 1 ? 1 : generationLimits[generation - 1] + 1;
+        }
+
+        private int GetGenerationMaxSpecies(int generation)
+        {
+            var generationLimits = new Dictionary<int, int>
+            {
+                { 1, 151 }, { 2, 251 }, { 3, 386 }, { 4, 493 }, 
+                { 5, 649 }, { 6, 721 }, { 7, 809 }, { 8, 905 }, { 9, 1010 }
+            };
+            
+            return generationLimits.ContainsKey(generation) 
+                ? generationLimits[generation]
+                : _saveFile.Version.GetMaxSpeciesID();
+        }
+
+        public static void ClearCache()
+        {
+            _cachedRegionalForms.Clear();
         }
     }
 }

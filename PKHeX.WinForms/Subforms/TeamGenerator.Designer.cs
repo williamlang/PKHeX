@@ -28,7 +28,6 @@ namespace PKHeX.WinForms.Subforms
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TeamGenerator));
             grpOptions = new System.Windows.Forms.GroupBox();
             grpOutput = new System.Windows.Forms.GroupBox();
             chkSecret = new System.Windows.Forms.CheckBox();
@@ -48,9 +47,8 @@ namespace PKHeX.WinForms.Subforms
             grpTeamRules = new System.Windows.Forms.GroupBox();
             chkBalanced = new System.Windows.Forms.CheckBox();
             chkMustEvolve = new System.Windows.Forms.CheckBox();
-            cboGeneration = new System.Windows.Forms.ComboBox();
+            cboGeneration = new System.Windows.Forms.CheckedListBox();
             lblGeneration = new System.Windows.Forms.Label();
-            chkLimit = new System.Windows.Forms.CheckBox();
             label1 = new System.Windows.Forms.Label();
             cboStarter = new System.Windows.Forms.CheckedListBox();
             lblTeamSize = new System.Windows.Forms.Label();
@@ -78,7 +76,6 @@ namespace PKHeX.WinForms.Subforms
             grpOptions.Controls.Add(grpTeamRules);
             grpOptions.Controls.Add(cboGeneration);
             grpOptions.Controls.Add(lblGeneration);
-            grpOptions.Controls.Add(chkLimit);
             grpOptions.Controls.Add(label1);
             grpOptions.Controls.Add(cboStarter);
             grpOptions.Controls.Add(lblTeamSize);
@@ -90,7 +87,7 @@ namespace PKHeX.WinForms.Subforms
             grpOptions.Controls.Add(btnHelp);
             grpOptions.Location = new System.Drawing.Point(12, 12);
             grpOptions.Name = "grpOptions";
-            grpOptions.Size = new System.Drawing.Size(560, 515);
+            grpOptions.Size = new System.Drawing.Size(560, 578);
             grpOptions.TabIndex = 0;
             grpOptions.TabStop = false;
             grpOptions.Text = "Team Generator Options";
@@ -101,7 +98,7 @@ namespace PKHeX.WinForms.Subforms
             grpOutput.Controls.Add(chkEggs);
             grpOutput.Controls.Add(lblHatchRate);
             grpOutput.Controls.Add(cboHatchRate);
-            grpOutput.Location = new System.Drawing.Point(10, 390);
+            grpOutput.Location = new System.Drawing.Point(10, 462);
             grpOutput.Name = "grpOutput";
             grpOutput.Size = new System.Drawing.Size(260, 110);
             grpOutput.TabIndex = 22;
@@ -157,7 +154,7 @@ namespace PKHeX.WinForms.Subforms
             grpPokemonOptions.Controls.Add(numMinStatTotal);
             grpPokemonOptions.Controls.Add(lblMaxStatTotal);
             grpPokemonOptions.Controls.Add(numMaxStatTotal);
-            grpPokemonOptions.Location = new System.Drawing.Point(280, 240);
+            grpPokemonOptions.Location = new System.Drawing.Point(280, 376);
             grpPokemonOptions.Name = "grpPokemonOptions";
             grpPokemonOptions.Size = new System.Drawing.Size(260, 140);
             grpPokemonOptions.TabIndex = 21;
@@ -261,7 +258,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             grpTeamRules.Controls.Add(chkBalanced);
             grpTeamRules.Controls.Add(chkMustEvolve);
-            grpTeamRules.Location = new System.Drawing.Point(10, 240);
+            grpTeamRules.Location = new System.Drawing.Point(10, 376);
             grpTeamRules.Name = "grpTeamRules";
             grpTeamRules.Size = new System.Drawing.Size(260, 80);
             grpTeamRules.TabIndex = 20;
@@ -290,37 +287,28 @@ namespace PKHeX.WinForms.Subforms
             // 
             // cboGeneration
             // 
+            cboGeneration.ColumnWidth = 50;
             cboGeneration.FormattingEnabled = true;
-            cboGeneration.Location = new System.Drawing.Point(85, 152);
+            cboGeneration.Location = new System.Drawing.Point(85, 142);
+            cboGeneration.MultiColumn = true;
             cboGeneration.Name = "cboGeneration";
-            cboGeneration.Size = new System.Drawing.Size(111, 23);
+            cboGeneration.Size = new System.Drawing.Size(270, 58);
             cboGeneration.TabIndex = 12;
-            cboGeneration.SelectedIndexChanged += cboGeneration_SelectedIndexChanged;
+            cboGeneration.ItemCheck += cboGeneration_ItemCheck;
             // 
             // lblGeneration
             // 
             lblGeneration.AutoSize = true;
-            lblGeneration.Location = new System.Drawing.Point(5, 155);
+            lblGeneration.Location = new System.Drawing.Point(10, 142);
             lblGeneration.Name = "lblGeneration";
-            lblGeneration.Size = new System.Drawing.Size(65, 15);
+            lblGeneration.Size = new System.Drawing.Size(70, 15);
             lblGeneration.TabIndex = 11;
-            lblGeneration.Text = "Generation";
-            // 
-            // chkLimit
-            // 
-            chkLimit.AutoSize = true;
-            chkLimit.Location = new System.Drawing.Point(202, 154);
-            chkLimit.Name = "chkLimit";
-            chkLimit.Size = new System.Drawing.Size(58, 19);
-            chkLimit.TabIndex = 13;
-            chkLimit.Text = "Limit?";
-            chkLimit.UseVisualStyleBackColor = true;
-            chkLimit.CheckedChanged += chkLimit_CheckedChanged;
+            lblGeneration.Text = "Generations";
             // 
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new System.Drawing.Point(10, 60);
+            label1.Location = new System.Drawing.Point(35, 60);
             label1.Name = "label1";
             label1.Size = new System.Drawing.Size(41, 15);
             label1.TabIndex = 10;
@@ -340,7 +328,7 @@ namespace PKHeX.WinForms.Subforms
             // lblTeamSize
             // 
             lblTeamSize.AutoSize = true;
-            lblTeamSize.Location = new System.Drawing.Point(6, 25);
+            lblTeamSize.Location = new System.Drawing.Point(17, 25);
             lblTeamSize.Name = "lblTeamSize";
             lblTeamSize.Size = new System.Drawing.Size(59, 15);
             lblTeamSize.TabIndex = 7;
@@ -370,7 +358,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             cboPreset.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             cboPreset.FormattingEnabled = true;
-            cboPreset.Location = new System.Drawing.Point(85, 181);
+            cboPreset.Location = new System.Drawing.Point(85, 206);
             cboPreset.Name = "cboPreset";
             cboPreset.Size = new System.Drawing.Size(175, 23);
             cboPreset.TabIndex = 15;
@@ -379,7 +367,7 @@ namespace PKHeX.WinForms.Subforms
             // lblPreset
             // 
             lblPreset.AutoSize = true;
-            lblPreset.Location = new System.Drawing.Point(30, 184);
+            lblPreset.Location = new System.Drawing.Point(37, 209);
             lblPreset.Name = "lblPreset";
             lblPreset.Size = new System.Drawing.Size(39, 15);
             lblPreset.TabIndex = 16;
@@ -387,7 +375,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             // Generate
             // 
-            Generate.Location = new System.Drawing.Point(373, 479);
+            Generate.Location = new System.Drawing.Point(373, 542);
             Generate.Name = "Generate";
             Generate.Size = new System.Drawing.Size(100, 30);
             Generate.TabIndex = 3;
@@ -397,7 +385,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             // btnHelp
             // 
-            btnHelp.Location = new System.Drawing.Point(479, 479);
+            btnHelp.Location = new System.Drawing.Point(479, 542);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new System.Drawing.Size(75, 30);
             btnHelp.TabIndex = 23;
@@ -407,9 +395,9 @@ namespace PKHeX.WinForms.Subforms
             // 
             // progressBar
             // 
-            progressBar.Location = new System.Drawing.Point(12, 545);
+            progressBar.Location = new System.Drawing.Point(12, 596);
             progressBar.Name = "progressBar";
-            progressBar.Size = new System.Drawing.Size(554, 23);
+            progressBar.Size = new System.Drawing.Size(560, 23);
             progressBar.TabIndex = 25;
             progressBar.Visible = false;
             // 
@@ -426,12 +414,11 @@ namespace PKHeX.WinForms.Subforms
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(584, 580);
+            ClientSize = new System.Drawing.Size(584, 631);
             Controls.Add(grpOptions);
             Controls.Add(progressBar);
             Controls.Add(lblProgress);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "TeamGenerator";
@@ -471,9 +458,8 @@ namespace PKHeX.WinForms.Subforms
         private System.Windows.Forms.CheckBox chkRegionalForms;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckedListBox cboStarter;
-        private System.Windows.Forms.ComboBox cboGeneration;
+        private System.Windows.Forms.CheckedListBox cboGeneration;
         private System.Windows.Forms.Label lblGeneration;
-        private System.Windows.Forms.CheckBox chkLimit;
         private System.Windows.Forms.ComboBox cboPreset;
         private System.Windows.Forms.Label lblPreset;
         private System.Windows.Forms.CheckBox chkStatLimit;
