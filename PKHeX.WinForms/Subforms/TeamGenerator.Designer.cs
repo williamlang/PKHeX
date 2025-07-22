@@ -30,40 +30,43 @@ namespace PKHeX.WinForms.Subforms
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TeamGenerator));
             grpOptions = new System.Windows.Forms.GroupBox();
-            grpTeamRules = new System.Windows.Forms.GroupBox();
-            grpPokemonOptions = new System.Windows.Forms.GroupBox();
             grpOutput = new System.Windows.Forms.GroupBox();
-            btnHelp = new System.Windows.Forms.Button();
-            chkLimit = new System.Windows.Forms.CheckBox();
-            cboGeneration = new System.Windows.Forms.ComboBox();
-            cboStarter = new System.Windows.Forms.CheckedListBox();
-            lblGeneration = new System.Windows.Forms.Label();
-            label1 = new System.Windows.Forms.Label();
-            chkBalanced = new System.Windows.Forms.CheckBox();
-            chkMustEvolve = new System.Windows.Forms.CheckBox();
+            chkSecret = new System.Windows.Forms.CheckBox();
+            chkEggs = new System.Windows.Forms.CheckBox();
+            lblHatchRate = new System.Windows.Forms.Label();
+            cboHatchRate = new System.Windows.Forms.ComboBox();
+            grpPokemonOptions = new System.Windows.Forms.GroupBox();
             chkLegendaries = new System.Windows.Forms.CheckBox();
             chkRegionalForms = new System.Windows.Forms.CheckBox();
+            chkMaxIVs = new System.Windows.Forms.CheckBox();
+            chkEvoItems = new System.Windows.Forms.CheckBox();
+            chkStatLimit = new System.Windows.Forms.CheckBox();
+            lblMinStatTotal = new System.Windows.Forms.Label();
+            numMinStatTotal = new System.Windows.Forms.NumericUpDown();
+            lblMaxStatTotal = new System.Windows.Forms.Label();
+            numMaxStatTotal = new System.Windows.Forms.NumericUpDown();
+            grpTeamRules = new System.Windows.Forms.GroupBox();
+            chkBalanced = new System.Windows.Forms.CheckBox();
+            chkMustEvolve = new System.Windows.Forms.CheckBox();
+            cboGeneration = new System.Windows.Forms.ComboBox();
+            lblGeneration = new System.Windows.Forms.Label();
+            chkLimit = new System.Windows.Forms.CheckBox();
+            label1 = new System.Windows.Forms.Label();
+            cboStarter = new System.Windows.Forms.CheckedListBox();
             lblTeamSize = new System.Windows.Forms.Label();
             sldTeamSize = new System.Windows.Forms.TrackBar();
             lblTeamSizeValue = new System.Windows.Forms.Label();
-            chkSecret = new System.Windows.Forms.CheckBox();
-            chkEggs = new System.Windows.Forms.CheckBox();
-            Generate = new System.Windows.Forms.Button();
             cboPreset = new System.Windows.Forms.ComboBox();
             lblPreset = new System.Windows.Forms.Label();
-            chkStatLimit = new System.Windows.Forms.CheckBox();
-            numMinStatTotal = new System.Windows.Forms.NumericUpDown();
-            numMaxStatTotal = new System.Windows.Forms.NumericUpDown();
-            lblMinStatTotal = new System.Windows.Forms.Label();
-            lblMaxStatTotal = new System.Windows.Forms.Label();
-            chkMaxIVs = new System.Windows.Forms.CheckBox();
+            Generate = new System.Windows.Forms.Button();
+            btnHelp = new System.Windows.Forms.Button();
             grpOptions.SuspendLayout();
-            grpTeamRules.SuspendLayout();
-            grpPokemonOptions.SuspendLayout();
             grpOutput.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)sldTeamSize).BeginInit();
+            grpPokemonOptions.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numMinStatTotal).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMaxStatTotal).BeginInit();
+            grpTeamRules.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)sldTeamSize).BeginInit();
             SuspendLayout();
             // 
             // grpOptions
@@ -85,27 +88,68 @@ namespace PKHeX.WinForms.Subforms
             grpOptions.Controls.Add(btnHelp);
             grpOptions.Location = new System.Drawing.Point(12, 12);
             grpOptions.Name = "grpOptions";
-            grpOptions.Size = new System.Drawing.Size(560, 500);
+            grpOptions.Size = new System.Drawing.Size(560, 515);
             grpOptions.TabIndex = 0;
             grpOptions.TabStop = false;
             grpOptions.Text = "Team Generator Options";
             // 
-            // grpTeamRules
+            // grpOutput
             // 
-            grpTeamRules.Controls.Add(chkBalanced);
-            grpTeamRules.Controls.Add(chkMustEvolve);
-            grpTeamRules.Location = new System.Drawing.Point(10, 240);
-            grpTeamRules.Name = "grpTeamRules";
-            grpTeamRules.Size = new System.Drawing.Size(260, 80);
-            grpTeamRules.TabIndex = 20;
-            grpTeamRules.TabStop = false;
-            grpTeamRules.Text = "Team Rules";
+            grpOutput.Controls.Add(chkSecret);
+            grpOutput.Controls.Add(chkEggs);
+            grpOutput.Controls.Add(lblHatchRate);
+            grpOutput.Controls.Add(cboHatchRate);
+            grpOutput.Location = new System.Drawing.Point(10, 390);
+            grpOutput.Name = "grpOutput";
+            grpOutput.Size = new System.Drawing.Size(260, 110);
+            grpOutput.TabIndex = 22;
+            grpOutput.TabStop = false;
+            grpOutput.Text = "Output Options";
+            // 
+            // chkSecret
+            // 
+            chkSecret.AutoSize = true;
+            chkSecret.Location = new System.Drawing.Point(10, 25);
+            chkSecret.Name = "chkSecret";
+            chkSecret.Size = new System.Drawing.Size(89, 19);
+            chkSecret.TabIndex = 5;
+            chkSecret.Text = "Silent Mode";
+            chkSecret.UseVisualStyleBackColor = true;
+            // 
+            // chkEggs
+            // 
+            chkEggs.AutoSize = true;
+            chkEggs.Location = new System.Drawing.Point(10, 50);
+            chkEggs.Name = "chkEggs";
+            chkEggs.Size = new System.Drawing.Size(67, 19);
+            chkEggs.TabIndex = 4;
+            chkEggs.Text = "As Eggs";
+            chkEggs.UseVisualStyleBackColor = true;
+            // 
+            // lblHatchRate
+            // 
+            lblHatchRate.AutoSize = true;
+            lblHatchRate.Location = new System.Drawing.Point(10, 78);
+            lblHatchRate.Name = "lblHatchRate";
+            lblHatchRate.Size = new System.Drawing.Size(71, 15);
+            lblHatchRate.TabIndex = 6;
+            lblHatchRate.Text = "Hatch Rate:";
+            // 
+            // cboHatchRate
+            // 
+            cboHatchRate.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            cboHatchRate.FormattingEnabled = true;
+            cboHatchRate.Location = new System.Drawing.Point(90, 75);
+            cboHatchRate.Name = "cboHatchRate";
+            cboHatchRate.Size = new System.Drawing.Size(75, 23);
+            cboHatchRate.TabIndex = 7;
             // 
             // grpPokemonOptions
             // 
             grpPokemonOptions.Controls.Add(chkLegendaries);
             grpPokemonOptions.Controls.Add(chkRegionalForms);
             grpPokemonOptions.Controls.Add(chkMaxIVs);
+            grpPokemonOptions.Controls.Add(chkEvoItems);
             grpPokemonOptions.Controls.Add(chkStatLimit);
             grpPokemonOptions.Controls.Add(lblMinStatTotal);
             grpPokemonOptions.Controls.Add(numMinStatTotal);
@@ -118,16 +162,147 @@ namespace PKHeX.WinForms.Subforms
             grpPokemonOptions.TabStop = false;
             grpPokemonOptions.Text = "Pokémon Options";
             // 
-            // grpOutput
+            // chkLegendaries
             // 
-            grpOutput.Controls.Add(chkSecret);
-            grpOutput.Controls.Add(chkEggs);
-            grpOutput.Location = new System.Drawing.Point(10, 390);
-            grpOutput.Name = "grpOutput";
-            grpOutput.Size = new System.Drawing.Size(260, 80);
-            grpOutput.TabIndex = 22;
-            grpOutput.TabStop = false;
-            grpOutput.Text = "Output Options";
+            chkLegendaries.AutoSize = true;
+            chkLegendaries.Location = new System.Drawing.Point(10, 25);
+            chkLegendaries.Name = "chkLegendaries";
+            chkLegendaries.Size = new System.Drawing.Size(89, 19);
+            chkLegendaries.TabIndex = 6;
+            chkLegendaries.Text = "Legendaries";
+            chkLegendaries.UseVisualStyleBackColor = true;
+            // 
+            // chkRegionalForms
+            // 
+            chkRegionalForms.AutoSize = true;
+            chkRegionalForms.Location = new System.Drawing.Point(10, 50);
+            chkRegionalForms.Name = "chkRegionalForms";
+            chkRegionalForms.Size = new System.Drawing.Size(108, 19);
+            chkRegionalForms.TabIndex = 17;
+            chkRegionalForms.Text = "Regional Forms";
+            chkRegionalForms.UseVisualStyleBackColor = true;
+            // 
+            // chkMaxIVs
+            // 
+            chkMaxIVs.AutoSize = true;
+            chkMaxIVs.Location = new System.Drawing.Point(130, 50);
+            chkMaxIVs.Name = "chkMaxIVs";
+            chkMaxIVs.Size = new System.Drawing.Size(66, 19);
+            chkMaxIVs.TabIndex = 23;
+            chkMaxIVs.Text = "Max IVs";
+            chkMaxIVs.UseVisualStyleBackColor = true;
+            // 
+            // chkEvoItems
+            // 
+            chkEvoItems.AutoSize = true;
+            chkEvoItems.Location = new System.Drawing.Point(130, 75);
+            chkEvoItems.Name = "chkEvoItems";
+            chkEvoItems.Size = new System.Drawing.Size(108, 19);
+            chkEvoItems.TabIndex = 24;
+            chkEvoItems.Text = "Evolution Items";
+            chkEvoItems.UseVisualStyleBackColor = true;
+            // 
+            // chkStatLimit
+            // 
+            chkStatLimit.AutoSize = true;
+            chkStatLimit.Location = new System.Drawing.Point(10, 75);
+            chkStatLimit.Name = "chkStatLimit";
+            chkStatLimit.Size = new System.Drawing.Size(105, 19);
+            chkStatLimit.TabIndex = 18;
+            chkStatLimit.Text = "Limit Stat Total";
+            chkStatLimit.UseVisualStyleBackColor = true;
+            chkStatLimit.CheckedChanged += chkStatLimit_CheckedChanged;
+            // 
+            // lblMinStatTotal
+            // 
+            lblMinStatTotal.AutoSize = true;
+            lblMinStatTotal.Enabled = false;
+            lblMinStatTotal.Location = new System.Drawing.Point(10, 100);
+            lblMinStatTotal.Name = "lblMinStatTotal";
+            lblMinStatTotal.Size = new System.Drawing.Size(31, 15);
+            lblMinStatTotal.TabIndex = 19;
+            lblMinStatTotal.Text = "Min:";
+            // 
+            // numMinStatTotal
+            // 
+            numMinStatTotal.Enabled = false;
+            numMinStatTotal.Location = new System.Drawing.Point(47, 98);
+            numMinStatTotal.Maximum = new decimal(new int[] { 800, 0, 0, 0 });
+            numMinStatTotal.Minimum = new decimal(new int[] { 180, 0, 0, 0 });
+            numMinStatTotal.Name = "numMinStatTotal";
+            numMinStatTotal.Size = new System.Drawing.Size(60, 23);
+            numMinStatTotal.TabIndex = 20;
+            numMinStatTotal.Value = new decimal(new int[] { 200, 0, 0, 0 });
+            // 
+            // lblMaxStatTotal
+            // 
+            lblMaxStatTotal.AutoSize = true;
+            lblMaxStatTotal.Enabled = false;
+            lblMaxStatTotal.Location = new System.Drawing.Point(113, 100);
+            lblMaxStatTotal.Name = "lblMaxStatTotal";
+            lblMaxStatTotal.Size = new System.Drawing.Size(32, 15);
+            lblMaxStatTotal.TabIndex = 21;
+            lblMaxStatTotal.Text = "Max:";
+            // 
+            // numMaxStatTotal
+            // 
+            numMaxStatTotal.Enabled = false;
+            numMaxStatTotal.Location = new System.Drawing.Point(153, 98);
+            numMaxStatTotal.Maximum = new decimal(new int[] { 800, 0, 0, 0 });
+            numMaxStatTotal.Minimum = new decimal(new int[] { 180, 0, 0, 0 });
+            numMaxStatTotal.Name = "numMaxStatTotal";
+            numMaxStatTotal.Size = new System.Drawing.Size(60, 23);
+            numMaxStatTotal.TabIndex = 22;
+            numMaxStatTotal.Value = new decimal(new int[] { 600, 0, 0, 0 });
+            // 
+            // grpTeamRules
+            // 
+            grpTeamRules.Controls.Add(chkBalanced);
+            grpTeamRules.Controls.Add(chkMustEvolve);
+            grpTeamRules.Location = new System.Drawing.Point(10, 240);
+            grpTeamRules.Name = "grpTeamRules";
+            grpTeamRules.Size = new System.Drawing.Size(260, 80);
+            grpTeamRules.TabIndex = 20;
+            grpTeamRules.TabStop = false;
+            grpTeamRules.Text = "Team Rules";
+            // 
+            // chkBalanced
+            // 
+            chkBalanced.AutoSize = true;
+            chkBalanced.Location = new System.Drawing.Point(10, 25);
+            chkBalanced.Name = "chkBalanced";
+            chkBalanced.Size = new System.Drawing.Size(74, 19);
+            chkBalanced.TabIndex = 9;
+            chkBalanced.Text = "Balanced";
+            chkBalanced.UseVisualStyleBackColor = true;
+            // 
+            // chkMustEvolve
+            // 
+            chkMustEvolve.AutoSize = true;
+            chkMustEvolve.Location = new System.Drawing.Point(10, 50);
+            chkMustEvolve.Name = "chkMustEvolve";
+            chkMustEvolve.Size = new System.Drawing.Size(90, 19);
+            chkMustEvolve.TabIndex = 8;
+            chkMustEvolve.Text = "Must Evolve";
+            chkMustEvolve.UseVisualStyleBackColor = true;
+            // 
+            // cboGeneration
+            // 
+            cboGeneration.FormattingEnabled = true;
+            cboGeneration.Location = new System.Drawing.Point(85, 152);
+            cboGeneration.Name = "cboGeneration";
+            cboGeneration.Size = new System.Drawing.Size(111, 23);
+            cboGeneration.TabIndex = 12;
+            cboGeneration.SelectedIndexChanged += cboGeneration_SelectedIndexChanged;
+            // 
+            // lblGeneration
+            // 
+            lblGeneration.AutoSize = true;
+            lblGeneration.Location = new System.Drawing.Point(5, 155);
+            lblGeneration.Name = "lblGeneration";
+            lblGeneration.Size = new System.Drawing.Size(65, 15);
+            lblGeneration.TabIndex = 11;
+            lblGeneration.Text = "Generation";
             // 
             // chkLimit
             // 
@@ -140,14 +315,14 @@ namespace PKHeX.WinForms.Subforms
             chkLimit.UseVisualStyleBackColor = true;
             chkLimit.CheckedChanged += chkLimit_CheckedChanged;
             // 
-            // cboGeneration
+            // label1
             // 
-            cboGeneration.FormattingEnabled = true;
-            cboGeneration.Location = new System.Drawing.Point(85, 152);
-            cboGeneration.Name = "cboGeneration";
-            cboGeneration.Size = new System.Drawing.Size(111, 23);
-            cboGeneration.TabIndex = 12;
-            cboGeneration.SelectedIndexChanged += cboGeneration_SelectedIndexChanged;
+            label1.AutoSize = true;
+            label1.Location = new System.Drawing.Point(10, 60);
+            label1.Name = "label1";
+            label1.Size = new System.Drawing.Size(41, 15);
+            label1.TabIndex = 10;
+            label1.Text = "Starter";
             // 
             // cboStarter
             // 
@@ -159,127 +334,6 @@ namespace PKHeX.WinForms.Subforms
             cboStarter.Size = new System.Drawing.Size(455, 76);
             cboStarter.TabIndex = 2;
             cboStarter.ItemCheck += cboStarter_ItemCheck;
-            // 
-            // lblGeneration
-            // 
-            lblGeneration.AutoSize = true;
-            lblGeneration.Location = new System.Drawing.Point(5, 155);
-            lblGeneration.Name = "lblGeneration";
-            lblGeneration.Size = new System.Drawing.Size(65, 15);
-            lblGeneration.TabIndex = 11;
-            lblGeneration.Text = "Generation";
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new System.Drawing.Point(10, 60);
-            label1.Name = "label1";
-            label1.Size = new System.Drawing.Size(41, 15);
-            label1.TabIndex = 10;
-            label1.Text = "Starter";
-            // 
-            // chkBalanced
-            // 
-            chkBalanced.AutoSize = true;
-            chkBalanced.Location = new System.Drawing.Point(10, 25);
-            chkBalanced.Name = "chkBalanced";
-            chkBalanced.Size = new System.Drawing.Size(79, 19);
-            chkBalanced.TabIndex = 9;
-            chkBalanced.Text = "Balanced";
-            chkBalanced.UseVisualStyleBackColor = true;
-            // 
-            // chkMustEvolve
-            // 
-            chkMustEvolve.AutoSize = true;
-            chkMustEvolve.Location = new System.Drawing.Point(10, 50);
-            chkMustEvolve.Name = "chkMustEvolve";
-            chkMustEvolve.Size = new System.Drawing.Size(95, 19);
-            chkMustEvolve.TabIndex = 8;
-            chkMustEvolve.Text = "Must Evolve";
-            chkMustEvolve.UseVisualStyleBackColor = true;
-            // 
-            // chkLegendaries
-            // 
-            chkLegendaries.AutoSize = true;
-            chkLegendaries.Location = new System.Drawing.Point(10, 25);
-            chkLegendaries.Name = "chkLegendaries";
-            chkLegendaries.Size = new System.Drawing.Size(94, 19);
-            chkLegendaries.TabIndex = 6;
-            chkLegendaries.Text = "Legendaries";
-            chkLegendaries.UseVisualStyleBackColor = true;
-            // 
-            // chkRegionalForms
-            // 
-            chkRegionalForms.AutoSize = true;
-            chkRegionalForms.Location = new System.Drawing.Point(10, 50);
-            chkRegionalForms.Name = "chkRegionalForms";
-            chkRegionalForms.Size = new System.Drawing.Size(110, 19);
-            chkRegionalForms.TabIndex = 17;
-            chkRegionalForms.Text = "Regional Forms";
-            chkRegionalForms.UseVisualStyleBackColor = true;
-            // 
-            // chkMaxIVs
-            // 
-            chkMaxIVs.AutoSize = true;
-            chkMaxIVs.Location = new System.Drawing.Point(130, 50);
-            chkMaxIVs.Name = "chkMaxIVs";
-            chkMaxIVs.Size = new System.Drawing.Size(78, 19);
-            chkMaxIVs.TabIndex = 23;
-            chkMaxIVs.Text = "Max IVs";
-            chkMaxIVs.UseVisualStyleBackColor = true;
-            // 
-            // chkStatLimit
-            // 
-            chkStatLimit.AutoSize = true;
-            chkStatLimit.Location = new System.Drawing.Point(10, 75);
-            chkStatLimit.Name = "chkStatLimit";
-            chkStatLimit.Size = new System.Drawing.Size(108, 19);
-            chkStatLimit.TabIndex = 18;
-            chkStatLimit.Text = "Limit Stat Total";
-            chkStatLimit.UseVisualStyleBackColor = true;
-            chkStatLimit.CheckedChanged += chkStatLimit_CheckedChanged;
-            // 
-            // lblMinStatTotal
-            // 
-            lblMinStatTotal.AutoSize = true;
-            lblMinStatTotal.Location = new System.Drawing.Point(10, 100);
-            lblMinStatTotal.Name = "lblMinStatTotal";
-            lblMinStatTotal.Size = new System.Drawing.Size(31, 15);
-            lblMinStatTotal.TabIndex = 19;
-            lblMinStatTotal.Text = "Min:";
-            lblMinStatTotal.Enabled = false;
-            // 
-            // numMinStatTotal
-            // 
-            numMinStatTotal.Location = new System.Drawing.Point(47, 98);
-            numMinStatTotal.Maximum = new decimal(new int[] { 800, 0, 0, 0 });
-            numMinStatTotal.Minimum = new decimal(new int[] { 180, 0, 0, 0 });
-            numMinStatTotal.Name = "numMinStatTotal";
-            numMinStatTotal.Size = new System.Drawing.Size(60, 23);
-            numMinStatTotal.TabIndex = 20;
-            numMinStatTotal.Value = new decimal(new int[] { 200, 0, 0, 0 });
-            numMinStatTotal.Enabled = false;
-            // 
-            // lblMaxStatTotal
-            // 
-            lblMaxStatTotal.AutoSize = true;
-            lblMaxStatTotal.Location = new System.Drawing.Point(113, 100);
-            lblMaxStatTotal.Name = "lblMaxStatTotal";
-            lblMaxStatTotal.Size = new System.Drawing.Size(34, 15);
-            lblMaxStatTotal.TabIndex = 21;
-            lblMaxStatTotal.Text = "Max:";
-            lblMaxStatTotal.Enabled = false;
-            // 
-            // numMaxStatTotal
-            // 
-            numMaxStatTotal.Location = new System.Drawing.Point(153, 98);
-            numMaxStatTotal.Maximum = new decimal(new int[] { 800, 0, 0, 0 });
-            numMaxStatTotal.Minimum = new decimal(new int[] { 180, 0, 0, 0 });
-            numMaxStatTotal.Name = "numMaxStatTotal";
-            numMaxStatTotal.Size = new System.Drawing.Size(60, 23);
-            numMaxStatTotal.TabIndex = 22;
-            numMaxStatTotal.Value = new decimal(new int[] { 600, 0, 0, 0 });
-            numMaxStatTotal.Enabled = false;
             // 
             // lblTeamSize
             // 
@@ -310,26 +364,6 @@ namespace PKHeX.WinForms.Subforms
             lblTeamSizeValue.TabIndex = 14;
             lblTeamSizeValue.Text = "6";
             // 
-            // chkSecret
-            // 
-            chkSecret.AutoSize = true;
-            chkSecret.Location = new System.Drawing.Point(10, 25);
-            chkSecret.Name = "chkSecret";
-            chkSecret.Size = new System.Drawing.Size(94, 19);
-            chkSecret.TabIndex = 5;
-            chkSecret.Text = "Silent Mode";
-            chkSecret.UseVisualStyleBackColor = true;
-            // 
-            // chkEggs
-            // 
-            chkEggs.AutoSize = true;
-            chkEggs.Location = new System.Drawing.Point(10, 50);
-            chkEggs.Name = "chkEggs";
-            chkEggs.Size = new System.Drawing.Size(78, 19);
-            chkEggs.TabIndex = 4;
-            chkEggs.Text = "As Eggs";
-            chkEggs.UseVisualStyleBackColor = true;
-            // 
             // cboPreset
             // 
             cboPreset.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
@@ -338,7 +372,7 @@ namespace PKHeX.WinForms.Subforms
             cboPreset.Name = "cboPreset";
             cboPreset.Size = new System.Drawing.Size(175, 23);
             cboPreset.TabIndex = 15;
-            cboPreset.SelectedIndexChanged += new System.EventHandler(cboPreset_SelectedIndexChanged);
+            cboPreset.SelectedIndexChanged += cboPreset_SelectedIndexChanged;
             // 
             // lblPreset
             // 
@@ -351,7 +385,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             // Generate
             // 
-            Generate.Location = new System.Drawing.Point(280, 420);
+            Generate.Location = new System.Drawing.Point(280, 440);
             Generate.Name = "Generate";
             Generate.Size = new System.Drawing.Size(100, 30);
             Generate.TabIndex = 3;
@@ -361,7 +395,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             // btnHelp
             // 
-            btnHelp.Location = new System.Drawing.Point(400, 420);
+            btnHelp.Location = new System.Drawing.Point(465, 440);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new System.Drawing.Size(75, 30);
             btnHelp.TabIndex = 23;
@@ -373,7 +407,7 @@ namespace PKHeX.WinForms.Subforms
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(584, 525);
+            ClientSize = new System.Drawing.Size(584, 509);
             Controls.Add(grpOptions);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
@@ -384,15 +418,15 @@ namespace PKHeX.WinForms.Subforms
             Text = "Team Generator";
             grpOptions.ResumeLayout(false);
             grpOptions.PerformLayout();
-            grpTeamRules.ResumeLayout(false);
-            grpTeamRules.PerformLayout();
-            grpPokemonOptions.ResumeLayout(false);
-            grpPokemonOptions.PerformLayout();
             grpOutput.ResumeLayout(false);
             grpOutput.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)sldTeamSize).EndInit();
+            grpPokemonOptions.ResumeLayout(false);
+            grpPokemonOptions.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numMinStatTotal).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMaxStatTotal).EndInit();
+            grpTeamRules.ResumeLayout(false);
+            grpTeamRules.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)sldTeamSize).EndInit();
             ResumeLayout(false);
         }
 
@@ -426,5 +460,8 @@ namespace PKHeX.WinForms.Subforms
         private System.Windows.Forms.Label lblMinStatTotal;
         private System.Windows.Forms.Label lblMaxStatTotal;
         private System.Windows.Forms.CheckBox chkMaxIVs;
+        private System.Windows.Forms.CheckBox chkEvoItems;
+        private System.Windows.Forms.Label lblHatchRate;
+        private System.Windows.Forms.ComboBox cboHatchRate;
     }
 }

@@ -61,6 +61,9 @@ namespace PKHeX.WinForms.Subforms
   \tab - Paldean forms (Generation 9)\par
 \bullet \b Max IVs:\b0 Generate Pokémon with maximum Individual Values (31 in all stats)\par
   \tab - When unchecked, Pokémon receive random IVs within legal ranges\par
+\bullet \b Evolution Items:\b0 Automatically provide evolution items as held items\par
+  \tab - Items like evolution stones for Eevee, trade items, etc.\par
+  \tab - Makes it clear which evolution was intended\par
 \bullet \b Limit Stat Total:\b0 Filter Pokémon by their base stat totals\par
   \tab - \b Min/Max:\b0 Set the stat total range (applies to final evolution forms)\par
   \tab - Useful for creating balanced teams or specific power levels\par

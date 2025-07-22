@@ -36,6 +36,27 @@ namespace PKHeX.WinForms.Subforms
 
             PopulateStarterList();
             PopulatePresets();
+            PopulateHatchRates();
+        }
+
+        private void PopulateHatchRates()
+        {
+            cboHatchRate.Items.Clear();
+            cboHatchRate.Items.Add("Fast");
+            cboHatchRate.Items.Add("Medium");
+            cboHatchRate.Items.Add("Slow");
+            cboHatchRate.SelectedIndex = 1; // Default to Medium
+        }
+
+        private int GetHatchRateMultiplier()
+        {
+            return cboHatchRate.SelectedItem?.ToString() switch
+            {
+                "Fast" => 1,
+                "Medium" => 2,
+                "Slow" => 3,
+                _ => 2 // Default to Medium
+            };
         }
 
         private void cboStarter_ItemCheck(object sender, ItemCheckEventArgs e)
@@ -376,6 +397,7 @@ namespace PKHeX.WinForms.Subforms
             bool allowRegionalForms = chkRegionalForms.Checked;
             bool hasStatLimit = chkStatLimit.Checked;
             bool useMaxIVs = chkMaxIVs.Checked;
+            bool includeEvoItems = chkEvoItems.Checked;
             int minStatTotal = hasStatLimit ? (int)numMinStatTotal.Value : 0;
             int maxStatTotal = hasStatLimit ? (int)numMaxStatTotal.Value : 999;
             List<byte> types = new List<byte>();
@@ -492,33 +514,28 @@ namespace PKHeX.WinForms.Subforms
                     if (pokemon.IsEgg)
                     {
                         // set hatch step counter
-                        pokemon.CurrentFriendship = (byte)((team.Count() + 1) * 2);
+                        int hatchRateMultiplier = GetHatchRateMultiplier();
+                        pokemon.CurrentFriendship = (byte)((team.Count() + 1) * hatchRateMultiplier);
                     }
-                    pokemon.ClearNickname();
-                    pokemon.Language = sav.Language;
-                    pokemon.Nickname = ((Species)pokemon.Species).ToString();
-                    pokemon.IsNicknamed = false; // Optional: mark as not nicknamed if needed
-
-                    ushort? evoItem = GetEvolutionItem(originalPokemon);
-                    if (evoItem != null)
+                    else
                     {
-                        pokemon.HeldItem = (int)evoItem;
+                        pokemon.ClearNickname();
+                        pokemon.Language = sav.Language;
+                        pokemon.Nickname = ((Species)pokemon.Species).ToString();
+                        pokemon.IsNicknamed = false; // Optional: mark as not nicknamed if needed
+                    }
+
+                    if (includeEvoItems)
+                    {
+                        ushort? evoItem = GetEvolutionItem(originalPokemon);
+                        if (evoItem != null)
+                        {
+                            pokemon.HeldItem = (int)evoItem;
+                        }
                     }
 
                     team.Add(pokemon);
                 }
-            }
-
-            if (team.Count > 0 && !isSecret)
-            {
-                string teamResults = string.Join(Environment.NewLine, team.Select(
-                    x => (Species)x.Species + " (" + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type1, sav.Generation) + (x.PersonalInfo.Type1 == x.PersonalInfo.Type2 ? "" : ", " + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type2, sav.Generation)) + ")"
-                ).ToArray());
-                MessageBox.Show(teamResults, "Generated Team", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else if (team.Count > 0)
-            {
-                MessageBox.Show("Team generated successfully!", "Done!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
             for (int i = 0; i < team.Count; i++)
@@ -532,6 +549,18 @@ namespace PKHeX.WinForms.Subforms
 
             // Refresh the party display to show the new team
             editor.SetParty();
+
+            if (team.Count > 0 && !isSecret)
+            {
+                string teamResults = string.Join(Environment.NewLine, team.Select(
+                    x => (Species)x.Species + " (" + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type1, sav.Generation) + (x.PersonalInfo.Type1 == x.PersonalInfo.Type2 ? "" : ", " + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type2, sav.Generation)) + ")"
+                ).ToArray());
+                MessageBox.Show(teamResults, "Generated Team", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else if (team.Count > 0)
+            {
+                MessageBox.Show("Team generated successfully!", "Done!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
 
         private ushort? GetEvolutionItem(PKM pokemon)
