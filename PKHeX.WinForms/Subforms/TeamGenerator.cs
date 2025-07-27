@@ -19,9 +19,10 @@ namespace PKHeX.WinForms.Subforms
         private SaveFile sav;
         Dictionary<int, int> maxSpeciesIdByGeneration;
         private readonly Random sharedRandom;
-        private bool disposed;
+
         private CancellationTokenSource? cancellationTokenSource;
         private GenerationSpeciesProvider? speciesProvider;
+        private PokemonFactory? pokemonFactory;
 
         public TeamGenerator(SAVEditor editor)
         {
@@ -42,9 +43,11 @@ namespace PKHeX.WinForms.Subforms
 
             // Initialize the species provider for regional form support
             speciesProvider = new GenerationSpeciesProvider(sav);
+            
+            // Initialize the Pokemon factory
+            pokemonFactory = new PokemonFactory(sav, sharedRandom);
 
             PopulateStarterList();
-            PopulatePresets();
             PopulateHatchRates();
         }
 
@@ -61,10 +64,10 @@ namespace PKHeX.WinForms.Subforms
         {
             return cboHatchRate.SelectedItem?.ToString() switch
             {
-                "Fast" => 1,
-                "Medium" => 2,
-                "Slow" => 3,
-                _ => 2 // Default to Medium
+                "Fast" => TeamGeneratorConstants.HatchRates.Fast,
+                "Medium" => TeamGeneratorConstants.HatchRates.Medium,
+                "Slow" => TeamGeneratorConstants.HatchRates.Slow,
+                _ => TeamGeneratorConstants.HatchRates.Medium // Default to Medium
             };
         }
 
@@ -74,7 +77,7 @@ namespace PKHeX.WinForms.Subforms
             int checkedCount = cboStarter.CheckedItems.Count;
             
             // If trying to check and already at max, prevent it
-            if (e.NewValue == CheckState.Checked && checkedCount >= 6)
+            if (e.NewValue == CheckState.Checked && checkedCount >= TeamGeneratorConstants.MaxTeamSize)
             {
                 e.NewValue = CheckState.Unchecked;
             }
@@ -163,106 +166,6 @@ namespace PKHeX.WinForms.Subforms
             }
         }
 
-        private void PopulatePresets()
-        {
-            cboPreset.Items.Clear();
-            cboPreset.Items.Add("-- Select Preset --");
-            cboPreset.Items.Add("Legendary Focus");
-            cboPreset.Items.Add("Starter Pokemon Only");
-            cboPreset.SelectedIndex = 0;
-        }
-
-        private void cboPreset_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (cboPreset.SelectedIndex <= 0) return;
-
-            string preset = cboPreset.SelectedItem?.ToString() ?? "";
-            if (string.IsNullOrEmpty(preset)) return;
-            
-            // Clear current selections
-            for (int i = 0; i < cboStarter.Items.Count; i++)
-            {
-                cboStarter.SetItemChecked(i, false);
-            }
-
-            switch (preset)
-            {
-                case "Legendary Focus":
-                    if (cboGeneration.Items.Count > 0)
-                    {
-                        // Select the latest generation
-                        cboGeneration.SetItemChecked(cboGeneration.Items.Count - 1, true);
-                    }
-                    sldTeamSize.Value = 3;
-                    SelectLegendaryPokemon();
-                    break;
-                    
-                case "Starter Pokemon Only":
-                    if (cboGeneration.Items.Count > 0)
-                    {
-                        // Select the latest generation
-                        cboGeneration.SetItemChecked(cboGeneration.Items.Count - 1, true);
-                    }
-                    sldTeamSize.Value = 6;
-                    SelectAllStarters();
-                    break;
-            }
-        }
-
-        private void SelectStartersBySpecies(int[] speciesIds)
-        {
-            for (int i = 0; i < cboStarter.Items.Count; i++)
-            {
-                object item = cboStarter.Items[i];
-                if (item is Species species && speciesIds.Contains((int)species))
-                {
-                    cboStarter.SetItemChecked(i, true);
-                }
-            }
-        }
-
-        private void SelectLegendaryPokemon()
-        {
-            // Define some common legendary Pokemon across generations
-            int[] legendaryIds = { 144, 145, 146, 150, 151, // Gen 1: Articuno, Zapdos, Moltres, Mewtwo, Mew
-                                   243, 244, 245, 249, 250, 251, // Gen 2: Raikou, Entei, Suicune, Lugia, Ho-Oh, Celebi
-                                   377, 378, 379, 380, 381, 382, 383, 384, 385, 386 }; // Gen 3: Regis, Latios, Latias, Kyogre, Groudon, Rayquaza, Jirachi, Deoxys
-
-            for (int i = 0; i < cboStarter.Items.Count && cboStarter.CheckedItems.Count < 6; i++)
-            {
-                object item = cboStarter.Items[i];
-                if (item is Species species && legendaryIds.Contains((int)species))
-                {
-                    cboStarter.SetItemChecked(i, true);
-                }
-            }
-        }
-
-        private void SelectAllStarters()
-        {
-            // Define starter Pokemon across generations
-            int[] starterIds = { 1, 4, 7, // Gen 1
-                                 152, 155, 158, // Gen 2
-                                 252, 255, 258, // Gen 3
-                                 387, 390, 393, // Gen 4
-                                 495, 498, 501, // Gen 5
-                                 650, 653, 656, // Gen 6
-                                 722, 725, 728, // Gen 7
-                                 810, 813, 816, // Gen 8
-                                 906, 909, 912 }; // Gen 9
-
-            int checkedCount = 0;
-            for (int i = 0; i < cboStarter.Items.Count && checkedCount < 6; i++)
-            {
-                object item = cboStarter.Items[i];
-                if (item is Species species && starterIds.Contains((int)species))
-                {
-                    cboStarter.SetItemChecked(i, true);
-                    checkedCount++;
-                }
-            }
-        }
-
         private List<PKM> CreatePokemon(Species species, bool isEgg)
         {
             return CreatePokemon(species, isEgg, false, false);
@@ -275,267 +178,21 @@ namespace PKHeX.WinForms.Subforms
 
         private List<PKM> CreatePokemon(Species species, bool isEgg, bool allowRegionalForms, bool useMaxIVs)
         {
-            PKM pokemon = EntityBlank.GetBlank(sav.Generation, sav.Version);
-            pokemon.Species = (ushort)species;
-            pokemon.Form = 0; // Start with base form, will be set properly later
-            pokemon.Language = sav.Language;
+            if (pokemonFactory == null)
+                throw new InvalidOperationException("Pokemon factory not initialized");
 
-            // set trainer info
-            TrainerInfoExtensions.ApplyTo(sav, pokemon);
-
-            // get met information from first party pokemon?
-            if (sav.PartyData.Count > 0)
-            {
-                if (sav.PartyData[0].MetDate != null)
-                {
-                    pokemon.MetDate = sav.PartyData[0].MetDate;
-                }
-
-                // set the MetLocation to the first pokemon in the party if there is one
-                pokemon.MetLocation = sav.PartyData[0].MetLocation;
-            }
-
-            // @todo: set default MetLocation
-            pokemon.MetLevel = 5;
-
-            var originalPokemon = pokemon.Clone();
-
-            // get the base pokemon to return
-            EvolutionTree et = EvolutionTree.GetEvolutionTree(sav.Version.GetContext());
-            var baby = et.GetBaseSpeciesForm((ushort)species, 0); // Always use form 0 for base species lookup
-            pokemon.Species = baby.Species;
-            pokemon.Form = baby.Form; // This will be the correct base form
-
-            CommonEdits.ClearNickname(pokemon);
-
-            if (pokemon.PersonalInfo.Genderless)
-            {
-                pokemon.Gender = (int)Gender.Genderless;
-            }
-            else if (pokemon.PersonalInfo.OnlyFemale)
-            {
-                pokemon.Gender = (int)Gender.Female;
-            }
-            else if (pokemon.PersonalInfo.OnlyMale)
-            {
-                pokemon.Gender = (int)Gender.Male;
-            }
-            else
-            {
-                pokemon.Gender = (byte)sharedRandom.Next(2); // 0 = Male, 1 = Female
-            }
-
-            // Handle forms AFTER setting base species and gender
-            if (allowRegionalForms && HasRegionalForm(pokemon.Species, sav.Version.GetContext()))
-            {
-                var regionalForms = GetAvailableRegionalForms(pokemon.Species, sav.Version.GetContext());
-                if (regionalForms.Length > 0)
-                {
-                    // Include the original form (0) plus regional forms
-                    var allForms = new byte[regionalForms.Length + 1];
-                    allForms[0] = 0; // Original form
-                    Array.Copy(regionalForms, 0, allForms, 1, regionalForms.Length);
-                    
-                    // Randomly select from available forms
-                    pokemon.Form = allForms[sharedRandom.Next(allForms.Length)];
-                }
-            }
-            else if (pokemon.PersonalInfo.HasForms)
-            {
-                // Only randomize forms if we're not handling regional forms specifically
-                // Use the correct FormCount without subtracting 1
-                pokemon.Form = (byte)sharedRandom.Next(0, pokemon.PersonalInfo.FormCount);
-            }
-
-            if (isEgg)
-            {
-                pokemon.MetLevel = 1;
-                pokemon.CurrentLevel = 1;
-                pokemon.EXP = Experience.GetEXP(pokemon.CurrentLevel, pokemon.PersonalInfo.EXPGrowth);
-            }
-
-            // stats, set IVs, EVs
-
-            Span<int> ivs = stackalloc int[6];
-            EffortValueGrade[] validGrades = { EffortValueGrade.MaxLegal, EffortValueGrade.MaxNearCap, EffortValueGrade.Half, EffortValueGrade.NearFull, EffortValueGrade.MaxEffective };
-
-            if (sav.Generation <= 2)
-            {
-                validGrades = validGrades.Concat(new EffortValueGrade[] { EffortValueGrade.Quarter, EffortValueGrade.Illegal }).ToArray();
-            }
-
-            if (useMaxIVs)
-            {
-                // Set maximum IVs (31 for each stat)
-                for (int i = 0; i < 6; i++)
-                {
-                    ivs[i] = 31;
-                }
-                pokemon.SetIVs(ivs);
-            }
-            else
-            {
-                while (!validGrades.Contains(EffortValues.GetGrade(ivs.ToArray().Sum()))) {
-                    pokemon.SetRandomIVs();
-
-                    for (int i = 0; i < 6; i++)
-                    {
-                        ivs[i] = pokemon.GetIV(i);
-                    }
-                }
-            }
-
-            Span<int> evs = stackalloc int[6];
-            while (!validGrades.Contains(EffortValues.GetGrade(evs.ToArray().Sum()))) {
-                EffortValues.SetRandom(evs, sav.Version.GetGeneration());
-                pokemon.SetEVs(evs);
-            }
-
-            pokemon.ResetPartyStats();
-
-            // nature
-            pokemon.Nature = (Nature)sharedRandom.Next(0, 24);
-
-            // ability
-            pokemon.Ability = sharedRandom.Next(0, pokemon.PersonalInfo.AbilityCount);
-
-            // moves
-            LegalityAnalysis la = new LegalityAnalysis(pokemon);
-            Span<ushort> moves = stackalloc ushort[4];
-            la.GetSuggestedCurrentMoves(moves, MoveSourceType.None);
-            pokemon.SetMoves(moves);
-
-            pokemon.IsEgg = isEgg;
-            if (pokemon.IsEgg)
-            {
-                pokemon.Nickname = "Egg";
-                pokemon.IsNicknamed = true;
-            }
-
-            pokemon.PID = EntityPID.GetRandomPID(Util.Rand, pokemon.Species, pokemon.Gender, 0, pokemon.Nature, pokemon.Form, 0);
+            var config = PokemonCreationConfig.FromSpecies(species, isEgg, allowRegionalForms, useMaxIVs);
+            var (pokemon, originalPokemon) = pokemonFactory.CreatePokemonPair(config);
             return new List<PKM> { pokemon, originalPokemon };
         }
 
         private List<PKM> CreatePokemonWithForm(SpeciesForm speciesForm, bool isEgg, bool useMaxIVs)
         {
-            PKM pokemon = EntityBlank.GetBlank(sav.Generation, sav.Version);
-            pokemon.Species = speciesForm.Species;
-            pokemon.Form = speciesForm.Form;
-            pokemon.Language = sav.Language;
+            if (pokemonFactory == null)
+                throw new InvalidOperationException("Pokemon factory not initialized");
 
-            // set trainer info
-            TrainerInfoExtensions.ApplyTo(sav, pokemon);
-
-            // get met information from first party pokemon?
-            if (sav.PartyData.Count > 0)
-            {
-                if (sav.PartyData[0].MetDate != null)
-                {
-                    pokemon.MetDate = sav.PartyData[0].MetDate;
-                }
-
-                // set the MetLocation to the first pokemon in the party if there is one
-                pokemon.MetLocation = sav.PartyData[0].MetLocation;
-            }
-
-            // @todo: set default MetLocation
-            pokemon.MetLevel = 5;
-
-            var originalPokemon = pokemon.Clone();
-
-            // get the base pokemon to return
-            EvolutionTree et = EvolutionTree.GetEvolutionTree(sav.Version.GetContext());
-            var baby = et.GetBaseSpeciesForm(speciesForm.Species, speciesForm.Form);
-            pokemon.Species = baby.Species;
-            pokemon.Form = baby.Form;
-
-            CommonEdits.ClearNickname(pokemon);
-
-            if (pokemon.PersonalInfo.Genderless)
-            {
-                pokemon.Gender = (int)Gender.Genderless;
-            }
-            else if (pokemon.PersonalInfo.OnlyFemale)
-            {
-                pokemon.Gender = (int)Gender.Female;
-            }
-            else if (pokemon.PersonalInfo.OnlyMale)
-            {
-                pokemon.Gender = (int)Gender.Male;
-            }
-            else
-            {
-                pokemon.Gender = (byte)sharedRandom.Next(2); // 0 = Male, 1 = Female
-            }
-
-            // Don't randomize form since it's already set by the species provider
-            // Keep the form as specified by the SpeciesForm
-
-            if (isEgg)
-            {
-                pokemon.MetLevel = 1;
-                pokemon.CurrentLevel = 1;
-                pokemon.EXP = Experience.GetEXP(pokemon.CurrentLevel, pokemon.PersonalInfo.EXPGrowth);
-            }
-
-            // stats, set IVs, EVs
-            Span<int> ivs = stackalloc int[6];
-            EffortValueGrade[] validGrades = { EffortValueGrade.MaxLegal, EffortValueGrade.MaxNearCap, EffortValueGrade.Half, EffortValueGrade.NearFull, EffortValueGrade.MaxEffective };
-
-            if (sav.Generation <= 2)
-            {
-                validGrades = validGrades.Concat(new EffortValueGrade[] { EffortValueGrade.Quarter, EffortValueGrade.Illegal }).ToArray();
-            }
-
-            if (useMaxIVs)
-            {
-                // Set maximum IVs (31 for each stat)
-                for (int i = 0; i < 6; i++)
-                {
-                    ivs[i] = 31;
-                }
-                pokemon.SetIVs(ivs);
-            }
-            else
-            {
-                while (!validGrades.Contains(EffortValues.GetGrade(ivs.ToArray().Sum()))) {
-                    pokemon.SetRandomIVs();
-
-                    for (int i = 0; i < 6; i++)
-                    {
-                        ivs[i] = pokemon.GetIV(i);
-                    }
-                }
-            }
-
-            Span<int> evs = stackalloc int[6];
-            while (!validGrades.Contains(EffortValues.GetGrade(evs.ToArray().Sum()))) {
-                EffortValues.SetRandom(evs, sav.Version.GetGeneration());
-                pokemon.SetEVs(evs);
-            }
-
-            pokemon.ResetPartyStats();
-
-            // nature
-            pokemon.Nature = (Nature)sharedRandom.Next(0, 24);
-
-            // ability
-            pokemon.Ability = sharedRandom.Next(0, pokemon.PersonalInfo.AbilityCount);
-
-            // moves
-            LegalityAnalysis la = new LegalityAnalysis(pokemon);
-            Span<ushort> moves = stackalloc ushort[4];
-            la.GetSuggestedCurrentMoves(moves, MoveSourceType.None);
-            pokemon.SetMoves(moves);
-
-            pokemon.IsEgg = isEgg;
-            if (pokemon.IsEgg)
-            {
-                pokemon.Nickname = "Egg";
-                pokemon.IsNicknamed = true;
-            }
-
-            pokemon.PID = EntityPID.GetRandomPID(Util.Rand, pokemon.Species, pokemon.Gender, 0, pokemon.Nature, pokemon.Form, 0);
+            var config = PokemonCreationConfig.FromSpeciesForm(speciesForm, isEgg, useMaxIVs);
+            var (pokemon, originalPokemon) = pokemonFactory.CreatePokemonPair(config);
             return new List<PKM> { pokemon, originalPokemon };
         }
 
@@ -605,7 +262,6 @@ namespace PKHeX.WinForms.Subforms
         private async Task GenerateTeamWithProgressAsync(CancellationToken cancellationToken)
         {
             int teamSize = sldTeamSize.Value;
-            bool legendariesOk = chkLegendaries.Checked;
             bool mustEvolve = chkMustEvolve.Checked;
             bool isEgg = chkEggs.Checked;
             bool isSecret = chkSecret.Checked;
@@ -671,7 +327,7 @@ namespace PKHeX.WinForms.Subforms
 
             int starterIndex = 0;
             int attempts = 0;
-            const int maxAttempts = 1000;
+            const int maxAttempts = TeamGeneratorConstants.MaxGenerationAttempts;
             
             // Initial progress update
             UpdateProgress(0, teamSize);
@@ -682,7 +338,7 @@ namespace PKHeX.WinForms.Subforms
                 cancellationToken.ThrowIfCancellationRequested();
                 
                 // Yield control less frequently for better performance
-                if (attempts % 50 == 0)
+                if (attempts % TeamGeneratorConstants.ProgressUpdateInterval == 0)
                 {
                     await Task.Delay(1, cancellationToken);
                     // Also update progress during long generation attempts
@@ -704,12 +360,27 @@ namespace PKHeX.WinForms.Subforms
                 }
                 else
                 {
-                    // Select from the available species pool (including regional forms)
+                    // Select from the available species pool, filtering regional forms if needed
                     if (availableSpecies.Count > 0)
                     {
-                        var randomIndex = sharedRandom.Next(availableSpecies.Count);
-                        var selectedSpecies = availableSpecies[randomIndex];
-                        pokemons = CreatePokemonWithForm(selectedSpecies, isEgg, useMaxIVs);
+                        // Filter out regional forms if the setting is disabled
+                        var filteredSpecies = allowRegionalForms 
+                            ? availableSpecies 
+                            : availableSpecies.Where(sf => sf.Form == 0).ToList();
+                        
+                        if (filteredSpecies.Count > 0)
+                        {
+                            var randomIndex = sharedRandom.Next(filteredSpecies.Count);
+                            var selectedSpecies = filteredSpecies[randomIndex];
+                            pokemons = CreatePokemonWithForm(selectedSpecies, isEgg, useMaxIVs);
+                        }
+                        else
+                        {
+                            // Fallback if no base forms available
+                            int rand = sharedRandom.Next(1, sav.Version.GetMaxSpeciesID());
+                            Species species = (Species)rand;
+                            pokemons = CreatePokemon(species, isEgg, allowRegionalForms, useMaxIVs);
+                        }
                     }
                     else
                     {
@@ -723,11 +394,6 @@ namespace PKHeX.WinForms.Subforms
                 pokemon = pokemons[0];
                 originalPokemon = pokemons[1];
 
-                if (!legendariesOk)
-                {
-                    pokemonIsOkay = pokemonIsOkay && !(SpeciesCategory.IsMythical(pokemon.Species) || SpeciesCategory.IsLegendary(pokemon.Species) || SpeciesCategory.IsSubLegendary(pokemon.Species));
-                }
-
                 EvolutionTree et = EvolutionTree.GetEvolutionTree(sav.Version.GetContext());
                 var evos = et.GetEvolutionsAndPreEvolutions(pokemon.Species, pokemon.Form);
                 var lastEvo = evos.Last();
@@ -735,6 +401,7 @@ namespace PKHeX.WinForms.Subforms
 
                 if (mustEvolve)
                 {
+                    // Must evolve: only include Pokémon that have evolution forms
                     pokemonIsOkay = pokemonIsOkay && evos.Count() > 1;
                 }
 
@@ -837,11 +504,11 @@ namespace PKHeX.WinForms.Subforms
                 string teamResults = string.Join(Environment.NewLine, team.Select(
                     x => GetPokemonDisplayName(x) + " (" + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type1, sav.Generation) + (x.PersonalInfo.Type1 == x.PersonalInfo.Type2 ? "" : ", " + MoveTypeExtensions.GetMoveTypeGeneration((MoveType)x.PersonalInfo.Type2, sav.Generation)) + ")"
                 ).ToArray());
-                MessageBox.Show(teamResults, "Generated Team", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // MessageBox.Show(teamResults, "Generated Team", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else if (team.Count > 0)
             {
-                MessageBox.Show("Team generated successfully!", "Done!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // MessageBox.Show("Team generated successfully!", "Done!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 

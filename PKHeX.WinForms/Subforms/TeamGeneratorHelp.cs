@@ -42,19 +42,17 @@ namespace PKHeX.WinForms.Subforms
 \bullet \b Team Size:\b0 Set how many Pokémon to generate (1-6)\par
 \bullet \b Starter:\b0 Select specific Pokémon to include in your team from the available list\par
 \bullet \b Generation:\b0 Choose which Pokémon generation to draw from\par
-\bullet \b Limit:\b0 When checked, only includes Pokémon from the selected generation (unchecked includes all generations up to selected)\par
-\bullet \b Preset:\b0 Quick setup configurations:\par
-  \tab - \i Legendary Focus:\i0 Generates a team focused on legendary Pokémon\par
-  \tab - \i Starter Pokémon Only:\i0 Generates a team using only starter Pokémon\par
 \par
 
 \cf2\b TEAM RULES:\cf0\b0\par
 \bullet \b Balanced:\b0 Ensures no duplicate types in your team (based on final evolution types)\par
 \bullet \b Must Evolve:\b0 Only includes Pokémon that have evolution forms (excludes single-stage Pokémon)\par
+  \tab - \cf3\b NOTE:\cf0\b0 When used with Legendaries option, legendary Pokémon are exempt from evolution requirement\par
 \par
 
 \cf2\b POKÉMON OPTIONS:\cf0\b0\par
 \bullet \b Legendaries:\b0 Include legendary, mythical, and sub-legendary Pokémon in generation\par
+  \tab - \cf3\b NOTE:\cf0\b0 When used with Must Evolve option, legendaries don't need to evolve\par
 \bullet \b Regional Forms:\b0 Include regional variants such as:\par
   \tab - Alolan forms (Generation 7)\par
   \tab - Galarian forms (Generation 8)\par
@@ -90,9 +88,10 @@ namespace PKHeX.WinForms.Subforms
 \bullet Evolution items are automatically provided when needed (e.g., stones for Eevee)\par
 \bullet Regional forms are only available if your current save file supports them\par
 \bullet The generator respects game-specific availability and legal move combinations\par
+\bullet When both Legendaries and Must Evolve are enabled, legendary Pokémon are exempt from evolution requirements\par
 \par
 
-\cf3\b TIP:\b0 Use presets as starting points, then customize the options to fine-tune your team generation!
+\cf3\b TIP:\b0 Experiment with different generation combinations and options to create unique and interesting teams!
 }";
 
             var btnClose = new Button
